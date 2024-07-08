@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": "./",
+    "rootDir": "./src",
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext" /* 使用node环境解析导入路径，需要完整路径，无法省略index.js,即使在ts中也需要引用*.js */,
+    "checkJs": false,
+    "declaration": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": false,
+    "skipLibCheck": true,
+    "paths": {
+      "root/*": ["./*"],
+      "src/*": ["src/*"]
+    }
+  },
+  "exclude": ["node_modules", "esm/", "*.config.*", "dist/"]
+}

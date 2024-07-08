@@ -1,0 +1,4 @@
+# *: 表示应用于所有文件
+# text=auto: 表示 Git 将自动检测文件内容的类型，并根据文件类型处理换行符 lf/crlf
+# lf/crlf: 表示换行符类型，lf 表示 Unix/Linux 换行符，crlf 表示 Windows 换行符
+* text=auto

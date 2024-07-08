@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./esm",
+    "target": "ES6",
+    "removeComments": false // Keep comments in the output
+  },
+  "include": ["src/**/*"]
+}
