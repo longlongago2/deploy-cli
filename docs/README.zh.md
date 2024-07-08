@@ -10,7 +10,9 @@
 
 - 全局安装
 
-`npm install @nebulae-cli/deploy -g`
+```bash
+npm install @nebulae-cli/deploy -g
+```
 
 > 测试命令 `deploy --version`
 
@@ -18,7 +20,9 @@
 
 - 项目级安装
 
-`npm install @nebulae-cli/deploy -D`
+```bash
+npm install @nebulae-cli/deploy -D
+```
 
 > 如果你不是全局安装，则无法注册全局命令，你必须在项目根目录找到脚本路径执行 `./node_modules/.bin/deploy --version`
 
@@ -28,7 +32,11 @@
 
 ### 1. 生成配置文件
 
-`deploy init`
+```bash
+deploy init
+```
+
+用法：
 
 ```bash
 Usage: deploy init|generate [options]
@@ -60,7 +68,11 @@ module.exports = {
 
 ### 3. 测试服务器连接
 
-`deploy connect`
+```bash
+deploy connect
+```
+
+用法:
 
 ```bash
 Usage: deploy connect [options]
@@ -79,7 +91,11 @@ Options:
 
 ### 4. 执行部署
 
-`deploy`
+```bash
+deploy
+```
+
+用法：
 
 ```bash
 Usage: deploy [options] [command]
@@ -94,7 +110,7 @@ Commands:
   upload [options]         upload local project dist to server | 上传本地项目到服务器
 ```
 
-你可以将命令添加到 package.json 中的 scripts:
+你可以将命令添加到 **package.json** 中的 `scripts`:
 
 ```json
   "scripts": {

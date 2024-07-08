@@ -10,7 +10,9 @@
 
 - Global install
 
-`npm install @nebulae-cli/deploy -g`
+```bash
+npm install @nebulae-cli/deploy -g
+```
 
 > test `deploy --version`
 
@@ -18,7 +20,9 @@ or
 
 - Project install
 
-`npm install @nebulae-cli/deploy -D`
+```bash
+npm install @nebulae-cli/deploy -D
+```
 
 > If you did not install globally, the command should be invoked using `./node_modules/.bin/deploy --version`
 
@@ -28,7 +32,10 @@ or
 
 ### 1. Generate deploy config file
 
-`deploy init`
+```bash
+deploy init
+```
+usage:
 
 ```bash
 Usage: deploy init|generate [options]
@@ -60,7 +67,10 @@ module.exports = {
 
 ### 3. Test the connection
 
-`deploy connect`
+```bash
+deploy connect
+```
+usage:
 
 ```bash
 Usage: deploy connect [options]
@@ -79,7 +89,11 @@ Options:
 
 ### 4. Deploy
 
-`deploy`
+```bash
+deploy
+```
+
+useage:
 
 ```bash
 Usage: deploy [options] [command]
@@ -94,7 +108,7 @@ Commands:
   upload [options]         upload local project dist to server
 ```
 
-you can add scripts to package.json
+you can add scripts to **package.json**
 
 ```json
   "scripts": {
