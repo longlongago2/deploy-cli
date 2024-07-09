@@ -1,9 +1,8 @@
 import path from 'node:path';
 import url from 'node:url';
 import chalk from 'chalk';
-import fs from 'fs-extra';
 import { program } from 'commander';
-import { ensureAbsolutePath, findProjectRoot, readDeployConfig } from '../utils.js';
+import { ensureAbsolutePath, readDeployConfig, readProjectPackageJson } from '../utils.js';
 import { connect } from './connect.js';
 import { deploy } from './deploy.js';
 import { backup } from './backup.js';
@@ -48,19 +47,16 @@ export interface UploadArgv {
 export function initCommands() {
   const __filename = url.fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const rootPath = findProjectRoot(__dirname);
-  let pkg: { version: string } = { version: '0.0.1' };
-  if (rootPath) {
-    // 读取项目 package.json
-    const pkgPath = path.resolve(rootPath, 'package.json');
-    const pkgContent = fs.readFileSync(pkgPath, 'utf-8');
-    pkg = JSON.parse(pkgContent) as { version: string };
+  const pkg = readProjectPackageJson(__dirname);
+
+  if (!pkg) {
+    throw new Error('package.json not found');
   }
 
   program
     .name('deploy')
     .description('CLI for deploy project to server | CLI 部署工具')
-    .version(pkg.version)
+    .version(pkg.version || '0.0.0')
     .option('-c, --config', 'config file path')
     .action(async (argv: Partial<DeployArgv>) => {
       try {

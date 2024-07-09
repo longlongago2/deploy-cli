@@ -1,9 +1,9 @@
 import path from 'node:path';
 import url from 'node:url';
-import { createRequire } from 'node:module';
 import fs from 'fs-extra';
 import slash from 'slash';
 import archiver from 'archiver';
+import { createRequire } from 'node:module';
 import type { ArchiverOptions } from 'archiver';
 import type { FileEntryWithStats, SFTPWrapper } from 'ssh2';
 import type { ConfigOptions } from './commands/deploy.js';
@@ -461,4 +461,33 @@ export function findProjectRoot(startDir: string): string | null {
   }
 
   return null;
+}
+
+export interface PackageJson {
+  name?: string;
+  version?: string;
+  description?: string;
+  main?: string;
+  scripts?: { [key: string]: string };
+  dependencies?: { [key: string]: string };
+  devDependencies?: { [key: string]: string };
+  peerDependencies?: { [key: string]: string };
+  optionalDependencies?: { [key: string]: string };
+  [key: string]: any; // 允许其他任意字段
+}
+
+/**
+ * 读取项目 package.json
+ * @param startDir - 起始位置
+ */
+export function readProjectPackageJson(startDir: string) {
+  const rootPath = findProjectRoot(startDir);
+  let pkg: PackageJson | null = null;
+  if (rootPath) {
+    // 读取项目 package.json
+    const pkgPath = path.resolve(rootPath, 'package.json');
+    const pkgContent = fs.readFileSync(pkgPath, 'utf-8');
+    pkg = JSON.parse(pkgContent) as PackageJson;
+  }
+  return pkg;
 }

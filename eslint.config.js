@@ -34,6 +34,7 @@ export default tsEslint.config(
   {
     rules: {
       'prettier/prettier': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off', // 作为library项目，允许使用 any
     },
   },
 );

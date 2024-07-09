@@ -4,7 +4,7 @@ import process from 'node:process';
 import fs from 'fs-extra';
 import Handlebars from 'handlebars';
 import ora from 'ora';
-import { defaultConfigPaths, findProjectRoot } from '../utils.js';
+import { defaultConfigPaths, findProjectRoot, readProjectPackageJson } from '../utils.js';
 
 export interface InitOptions {
   module?: 'commonjs' | 'cjs' | 'esm';
@@ -32,8 +32,9 @@ export function init(options: InitOptions) {
     const __filename = url.fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const rootPath = findProjectRoot(__dirname);
-    if (!rootPath) {
-      throw new Error('Function init: project package.json not found');
+    const pkg = readProjectPackageJson(__dirname);
+    if (!(rootPath && pkg?.name)) {
+      throw new Error('Function init: project package.json name not found');
     }
     const templateFilePath = path.resolve(rootPath, './templates/deploy.config.hbs');
     const templateContent = fs.readFileSync(templateFilePath, 'utf-8');
@@ -41,7 +42,7 @@ export function init(options: InitOptions) {
 
     // 根据模板生成配置文件
     const data = {
-      lib: '@repo/cli/deploy',
+      lib: pkg.name,
       moduleExportResolution: ext === '.cjs' ? 'module.exports =' : 'export default',
     };
     const result = template(data);

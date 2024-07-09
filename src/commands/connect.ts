@@ -1,8 +1,7 @@
-import process from 'node:process';
-import readline from 'node:readline/promises';
+import readlineSync from 'readline-sync';
 import ora from 'ora';
-import { Client } from 'ssh2';
 import chalk from 'chalk';
+import { Client } from 'ssh2';
 import { ensureAbsolutePath } from '../utils.js';
 
 export interface ConnectOptions {
@@ -57,12 +56,9 @@ export async function connect(options: ConnectOptions) {
     // 如果没有密码和私钥，则交互要求用户输入密码
     console.log(chalk.black.bold.bgYellow('    Server Account    '));
     console.log(`${chalk.gray.underline(' USERNAME ')}: ${chalk.gray(username)}`);
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
+    _password = await readlineSync.question(`${chalk.gray.underline(' PASSWORD ')}: `, {
+      hideEchoBack: true,
     });
-    _password = await rl.question(`${chalk.gray.underline(' PASSWORD ')}: `);
-    rl.close();
     // 输入完成后清屏，防止密码暴露在终端
     console.clear();
   }
