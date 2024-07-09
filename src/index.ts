@@ -1,7 +1,4 @@
-/*!
- * CLI for deploy project to server
- * Configuration file: deploy.config.js or deploy.config.json
- */
+#!/usr/bin/env node
 
 import { initCommands } from './commands/index.js';
 

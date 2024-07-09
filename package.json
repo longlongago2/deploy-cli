@@ -1,12 +1,11 @@
 {
   "name": "@nebulae-cli/deploy",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Command line tools for deploying",
   "private": false,
-  "main": "esm/index.js",
   "type": "module",
   "bin": {
-    "deploy": "esm/deploy.js"
+    "deploy": "./esm/index.js"
   },
   "files": [
     "esm",
@@ -17,7 +16,7 @@
     "build": "tsc -p tsconfig.esm.json",
     "deploy:dev": "node --import ./ts-node.register.js src/index.ts",
     "lint": "eslint . --fix",
-    "publish": "npm run build && npm publish --access public"
+    "pub": "npm run build && npm publish --access public"
   },
   "repository": {
     "type": "git",
