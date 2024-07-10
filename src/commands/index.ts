@@ -15,7 +15,8 @@ export interface DeployArgv {
 }
 
 export interface InitArgv {
-  module?: 'commonjs' | 'cjs' | 'esm';
+  type: 'json' | 'yaml' | 'javascript';
+  module?: 'commonjs' | 'cjs' | 'esm' | 'mjs';
 }
 
 export interface ConnectArgv {
@@ -75,7 +76,8 @@ export function initCommands() {
     .command('init')
     .alias('generate')
     .alias('gen')
-    .option('-m, --module <module>', 'module type: "commonjs" | "cjs" | "esm"', 'cjs')
+    .option('-t, --type <type>', 'file type: "json" | "yaml" | "javascript"', 'javascript')
+    .option('-m, --module <module>', 'javascript module type: "commonjs" | "cjs" | "esm" | "mjs"', 'cjs')
     .description('init(generate) deploy config file | 生成配置文件')
     .action((argv: Partial<InitArgv>) => {
       try {

@@ -1,0 +1,29 @@
+# SSH服务器的IP地址
+host: 127.0.0.1
+
+# SSH服务器的端口
+port: 22
+
+# SSH服务器的用户名
+username: root
+
+# 本地需要部署的源文件路径
+target: ./dist
+
+# 部署到SSH服务器的目标路径
+remoteDir: /var/www/html
+
+# 密码，非必填
+password:
+
+# 私钥，非必填
+privateKey:
+
+# 本地备份目录
+backupDir: ./backups
+
+# 是否自动备份
+autoBackup: true
+
+# 发布前是否自动清理服务器remoteDir目录
+autoClean: false

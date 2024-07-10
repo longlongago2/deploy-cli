@@ -7,18 +7,37 @@ import ora from 'ora';
 import { defaultConfigPaths, findProjectRoot, readProjectPackageJson } from '../utils.js';
 
 export interface InitOptions {
-  module?: 'commonjs' | 'cjs' | 'esm';
+  /**
+   * 文件类型
+   */
+  type?: 'json' | 'yaml' | 'javascript';
+
+  /**
+   * javascript 模块导出方式
+   */
+  module?: 'commonjs' | 'cjs' | 'esm' | 'mjs';
 }
 
-const moduleMapToExt = {
-  commonjs: '.cjs',
-  cjs: '.cjs',
-  esm: '.js',
+const mapToExt = {
+  json: '.json',
+  yaml: '.yaml',
+  javascript: {
+    commonjs: '.cjs',
+    cjs: '.cjs',
+    esm: '.js',
+    mjs: '.mjs',
+  },
 };
 
 export function init(options: InitOptions) {
+  const type = options?.type ?? 'javascript';
   const module = options?.module ?? 'cjs';
-  const ext = moduleMapToExt[module];
+  let ext;
+  if (type === 'javascript') {
+    ext = mapToExt[type][module];
+  } else {
+    ext = mapToExt[type];
+  }
   const exists = defaultConfigPaths.some((configPath) =>
     fs.existsSync(path.resolve(process.cwd(), configPath)),
   );
@@ -36,15 +55,21 @@ export function init(options: InitOptions) {
     if (!(rootPath && pkg?.name)) {
       throw new Error('Function init: project package.json name not found');
     }
-    const templateFilePath = path.resolve(rootPath, './templates/deploy.config.hbs');
+    let templateFilePath; // 模板文件路径
+    let data = {}; // 模板参数
+    if (type === 'json') {
+      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.json.hbs');
+    } else if (type === 'yaml') {
+      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.yaml.hbs');
+    } else {
+      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.js.hbs');
+      data = {
+        lib: pkg.name,
+        moduleExportResolution: ext === '.cjs' ? 'module.exports =' : 'export default',
+      };
+    }
     const templateContent = fs.readFileSync(templateFilePath, 'utf-8');
     const template = Handlebars.compile(templateContent, { noEscape: true });
-
-    // 根据模板生成配置文件
-    const data = {
-      lib: pkg.name,
-      moduleExportResolution: ext === '.cjs' ? 'module.exports =' : 'export default',
-    };
     const result = template(data);
 
     // 写入配置文件

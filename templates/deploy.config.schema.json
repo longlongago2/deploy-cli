@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfigOptions",
+  "type": "object",
+  "properties": {
+    "target": {
+      "type": "string",
+      "description": "本地项目 dist 路径"
+    },
+    "remoteDir": {
+      "type": "string",
+      "description": "服务器目标路径"
+    },
+    "backupDir": {
+      "type": "string",
+      "description": "备份路径，只能备份本地路径，默认 target 同级目录下的 backups 文件夹"
+    },
+    "autoBackup": {
+      "type": "boolean",
+      "description": "是否自动备份，默认 true",
+      "default": true
+    },
+    "autoClean": {
+      "type": "boolean",
+      "description": "是否自动清理服务器资源，默认 false",
+      "default": false
+    },
+    "host": {
+      "type": "string",
+      "description": "SSH 服务器地址"
+    },
+    "port": {
+      "type": "number",
+      "description": "SSH 端口号，默认 22",
+      "default": 22
+    },
+    "username": {
+      "type": "string",
+      "description": "SSH 用户名"
+    },
+    "password": {
+      "type": "string",
+      "description": "SSH 密码，如果 password 和 privateKey 都不存在，则连接服务器时，会提示输入密码"
+    },
+    "privateKey": {
+      "type": "string",
+      "description": "SSH 私钥路径，优先级高于密码"
+    }
+  },
+  "required": ["target", "remoteDir", "host", "username"]
+}

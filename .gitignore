@@ -23,6 +23,9 @@ esm
 deploy.config.json
 deploy.config.js
 deploy.config.cjs
+deploy.config.mjs
+deploy.config.yaml
+deploy.config.yml
 
 # Editor directories and files
 .vscode/*

@@ -3,6 +3,7 @@ import url from 'node:url';
 import fs from 'fs-extra';
 import slash from 'slash';
 import archiver from 'archiver';
+import yaml from 'js-yaml';
 import { createRequire } from 'node:module';
 import type { ArchiverOptions } from 'archiver';
 import type { FileEntryWithStats, SFTPWrapper } from 'ssh2';
@@ -12,7 +13,13 @@ import type { DeployClient } from './commands/connect.js';
 /**
  * 默认的配置文件路径，按顺序查找
  */
-export const defaultConfigPaths = ['./deploy.config.js', './deploy.config.cjs', './deploy.config.json'];
+export const defaultConfigPaths = [
+  './deploy.config.js',
+  './deploy.config.cjs',
+  './deploy.config.mjs',
+  './deploy.config.json',
+  './deploy.config.yaml',
+];
 
 /**
  * 获取带下划线的日期时间字符串
@@ -110,11 +117,14 @@ export async function loadDeployConfig(configPath: string) {
       // 使用 CommonJS 模块加载
       const require = createRequire(import.meta.url);
       config = require(configPath) as ConfigOptions;
-    } else if (ext === '.js') {
+    } else if (ext === '.js' || ext === '.mjs') {
       // 使用 ES module 加载
       const fileUrl = url.pathToFileURL(configPath).href;
       const module = (await import(fileUrl)) as { default: ConfigOptions };
       config = module.default || module;
+    } else if (ext === '.yaml' || ext === '.yml') {
+      // 加载 YAML 文件
+      config = yaml.load(await fs.readFile(configPath, 'utf-8')) as ConfigOptions;
     } else {
       return { err: new Error(`Unsupported config file type: ${configPath}`) };
     }
@@ -279,6 +289,25 @@ export async function connRmRf(conn: DeployClient, remoteDir: string) {
   const _remoteDir = slash(remoteDir);
   return new Promise<void>((resolve, reject) => {
     conn.exec(`rm -rf ${_remoteDir}`, (err, stream) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      stream.on('exit', () => {
+        resolve();
+      });
+    });
+  });
+}
+
+/**
+ * 执行远程命令（SSH协议）
+ * @param conn - 已连接的 SSH 实例
+ * @param command - 执行的命令
+ */
+export async function connExec(conn: DeployClient, command: string) {
+  return new Promise<void>((resolve, reject) => {
+    conn.exec(command, (err, stream) => {
       if (err) {
         reject(err);
         return;
