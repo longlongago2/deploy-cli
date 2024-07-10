@@ -1,12 +1,13 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import { ensureAbsolutePath, existsRemoteDir } from '../utils.js';
+import { ensureAbsolutePath, existsRemoteDir, connExec, DEFAULT_SSH_PORT } from '../utils.js';
 import { connect } from './connect.js';
 import { backup } from './backup.js';
 import { clean } from './clean.js';
 import { upload } from './upload.js';
-import type { ConnectOptions } from './connect.js';
+import type { ConnectOptions, DeployClient } from './connect.js';
+import ora from 'ora';
 
 export interface ConfigOptions extends ConnectOptions {
   /**
@@ -35,12 +36,23 @@ export interface ConfigOptions extends ConnectOptions {
    * - autoClean: false 不会清理，平滑部署，缺点是可能会有历史文件残留
    */
   autoClean?: boolean;
+
+  /**
+   * 部署完成后执行的远程命令, 例如：`['pm2 restart xxx', 'java -jar xxx.jar']` 等
+   */
+  deployedCommands?: string[];
+
+  /**
+   * 部署完成回调
+   * @param conn - SSH 连接实例
+   */
+  onCompleted?: (conn: DeployClient) => void | Promise<void>;
 }
 
 export async function deploy(options: ConfigOptions) {
   const {
     host,
-    port = 22,
+    port = DEFAULT_SSH_PORT,
     username,
     password,
     privateKey,
@@ -49,6 +61,8 @@ export async function deploy(options: ConfigOptions) {
     backupDir,
     autoBackup = true,
     autoClean = false,
+    deployedCommands,
+    onCompleted,
   } = options;
   // 确保所有路径全部转为绝对路径（相对于process.cwd()）
   const _privateKey = privateKey && ensureAbsolutePath(privateKey);
@@ -97,12 +111,33 @@ ${chalk.bold.bgRed(' 注意 ')} ${chalk.gray('✓ (pass) | ✗ (fail) | * (auto)
     if (autoBackup) {
       await backup({ source: remoteDir, dest: _backupDir }, conn);
     }
+
     if (autoClean) {
       await clean({ dir: remoteDir }, conn);
     }
+
     await upload({ target: _target, dir: remoteDir }, conn);
-    conn.end();
+
+    if (Array.isArray(deployedCommands) && deployedCommands.length > 0) {
+      const spinner = ora('执行远程命令').start();
+      const tasks = deployedCommands.map((cmd) => connExec(conn, cmd));
+      await Promise.all(tasks);
+      spinner.succeed('远程命令执行完毕');
+    }
+
+    if (onCompleted) {
+      const spinner = ora('执行部署完成回调').start();
+      const cb = onCompleted(conn);
+      if (cb instanceof Promise) {
+        await cb;
+        spinner.succeed('执行部署完成回调结束');
+      } else {
+        spinner.succeed('执行部署完成回调结束');
+      }
+    }
+
     console.log(chalk.green('🎉 部署成功'));
+    conn.end();
   } catch (error) {
     conn.end();
     throw new Error(`Deploy failed: ${(error as Error).message}`);

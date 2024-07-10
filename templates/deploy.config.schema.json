@@ -13,16 +13,16 @@
     },
     "backupDir": {
       "type": "string",
-      "description": "备份路径，只能备份本地路径，默认 target 同级目录下的 backups 文件夹"
+      "description": "备份路径（非必填），只能备份在本地，默认 target 同级目录下的 backups 文件夹"
     },
     "autoBackup": {
       "type": "boolean",
-      "description": "是否自动备份，默认 true",
+      "description": "是否自动备份（非必填），默认 true",
       "default": true
     },
     "autoClean": {
       "type": "boolean",
-      "description": "是否自动清理服务器资源，默认 false",
+      "description": "是否自动清理服务器资源（非必填），默认 false",
       "default": false
     },
     "host": {
@@ -31,7 +31,7 @@
     },
     "port": {
       "type": "number",
-      "description": "SSH 端口号，默认 22",
+      "description": "SSH 端口号（非必填），默认 22",
       "default": 22
     },
     "username": {
@@ -40,11 +40,18 @@
     },
     "password": {
       "type": "string",
-      "description": "SSH 密码，如果 password 和 privateKey 都不存在，则连接服务器时，会提示输入密码"
+      "description": "SSH 密码（非必填），如果 password 和 privateKey 都不存在，则连接服务器时，会提示输入密码"
     },
     "privateKey": {
       "type": "string",
-      "description": "SSH 私钥路径，优先级高于密码"
+      "description": "SSH 私钥路径（非必填），优先级高于密码"
+    },
+    "deployedCommands": {
+      "type": "array",
+      "description": "部署后执行的命令（非必填）",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": ["target", "remoteDir", "host", "username"]

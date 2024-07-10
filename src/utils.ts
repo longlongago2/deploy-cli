@@ -11,9 +11,14 @@ import type { ConfigOptions } from './commands/deploy.js';
 import type { DeployClient } from './commands/connect.js';
 
 /**
+ * 默认的 SSH 端口
+ */
+export const DEFAULT_SSH_PORT = 22;
+
+/**
  * 默认的配置文件路径，按顺序查找
  */
-export const defaultConfigPaths = [
+export const DEFAULT_CONFIG_PATHS = [
   './deploy.config.js',
   './deploy.config.cjs',
   './deploy.config.mjs',
@@ -148,7 +153,7 @@ export async function readDeployConfig(configPath?: string) {
   let configAbsolutePath;
   if (!configPath) {
     // 用户不提供，使用默认路径
-    for (const relativePath of defaultConfigPaths) {
+    for (const relativePath of DEFAULT_CONFIG_PATHS) {
       const absolutePath = path.resolve(process.cwd(), relativePath);
       if (fs.pathExistsSync(absolutePath)) {
         configAbsolutePath = absolutePath;

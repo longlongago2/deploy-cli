@@ -2,7 +2,12 @@ import path from 'node:path';
 import url from 'node:url';
 import chalk from 'chalk';
 import { program } from 'commander';
-import { ensureAbsolutePath, readDeployConfig, readProjectPackageJson } from '../utils.js';
+import {
+  ensureAbsolutePath,
+  readDeployConfig,
+  readProjectPackageJson,
+  DEFAULT_SSH_PORT,
+} from '../utils.js';
 import { connect } from './connect.js';
 import { deploy } from './deploy.js';
 import { backup } from './backup.js';
@@ -93,7 +98,7 @@ export function initCommands() {
     .command('connect')
     .description('test the connection to server | 服务器测试连接')
     .option('-h, --host <host>', 'server address')
-    .option('-p, --port <port>', 'server port', '22')
+    .option('-p, --port <port>', 'server port', String(DEFAULT_SSH_PORT))
     .option('-u, --username <username>', 'server username')
     .option('-w, --password <password>', 'server password')
     .option('-k, --privateKey <privateKey>', 'SSH private key path')

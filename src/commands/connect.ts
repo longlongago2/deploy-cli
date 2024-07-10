@@ -2,7 +2,7 @@ import readlineSync from 'readline-sync';
 import ora from 'ora';
 import chalk from 'chalk';
 import { Client } from 'ssh2';
-import { ensureAbsolutePath } from '../utils.js';
+import { DEFAULT_SSH_PORT, ensureAbsolutePath } from '../utils.js';
 
 export interface ConnectOptions {
   /**
@@ -44,7 +44,7 @@ export async function connect(options: ConnectOptions) {
     throw new Error('function connect: options is required');
   }
 
-  const { host, port = 22, username, password, privateKey } = options;
+  const { host, port = DEFAULT_SSH_PORT, username, password, privateKey } = options;
 
   const passport = password || privateKey;
 

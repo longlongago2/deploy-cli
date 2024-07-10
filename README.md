@@ -62,6 +62,7 @@ module.exports = {
   // password: '',
   // privateKey: '',
   // backupDir: '',
+  deployedCommands: [], // Remote commands executed after deployment is complete, for example: ['pm2 restart xxx', 'java -jar xxx.jar'], etc.
 };
 ```
 

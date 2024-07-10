@@ -63,6 +63,7 @@ module.exports = {
   // password: '',
   // privateKey: '',
   // backupDir: '',
+  deployedCommands: [], // 部署完成后执行的远程命令，例如：['pm2 restart xxx', 'java -jar xxx.jar'] 等
 };
 ```
 

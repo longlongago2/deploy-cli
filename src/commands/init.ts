@@ -4,7 +4,7 @@ import process from 'node:process';
 import fs from 'fs-extra';
 import Handlebars from 'handlebars';
 import ora from 'ora';
-import { defaultConfigPaths, findProjectRoot, readProjectPackageJson } from '../utils.js';
+import { DEFAULT_CONFIG_PATHS, findProjectRoot, readProjectPackageJson } from '../utils.js';
 
 export interface InitOptions {
   /**
@@ -38,7 +38,7 @@ export function init(options: InitOptions) {
   } else {
     ext = mapToExt[type];
   }
-  const exists = defaultConfigPaths.some((configPath) =>
+  const exists = DEFAULT_CONFIG_PATHS.some((configPath) =>
     fs.existsSync(path.resolve(process.cwd(), configPath)),
   );
   if (exists) {

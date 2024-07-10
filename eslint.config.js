@@ -12,6 +12,9 @@ export default tsEslint.config(
       globals: globals.node,
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        project: './tsconfig.json',
+      },
     },
   },
   {
@@ -35,6 +38,7 @@ export default tsEslint.config(
     rules: {
       'prettier/prettier': 'warn',
       '@typescript-eslint/no-explicit-any': 'off', // 作为library项目，允许使用 any
+      'no-await-in-loop': 'error', // 禁止在循环中使用 await
     },
   },
 );
