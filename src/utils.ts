@@ -313,13 +313,25 @@ export async function connRmRf(conn: DeployClient, remoteDir: string): Promise<v
  */
 export async function connExec(conn: DeployClient, command: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
-    conn.exec(command, (err, stream) => {
+    // 使用 bash -l 加载登录 shell 配置文件
+    const fullCommand = `bash -l -c '${command}'`;
+    conn.exec(fullCommand, (err, stream) => {
       if (err) {
         reject(err);
         return;
       }
+      let errMessage = '';
+      stream.stderr.on('data', (data: Buffer) => {
+        errMessage += data.toString();
+      });
       stream.on('exit', () => {
-        resolve();
+        setTimeout(() => {
+          if (errMessage.trim()) {
+            reject(new Error(errMessage));
+            return;
+          }
+          resolve();
+        }, 100);
       });
     });
   });

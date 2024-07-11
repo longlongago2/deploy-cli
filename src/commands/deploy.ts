@@ -142,8 +142,12 @@ SSH 用户名: ${chalk.bold.green(username)}
       if (Array.isArray(deployedCommands) && deployedCommands.length > 0) {
         const spinner = ora('执行远程命令').start();
         const command = deployedCommands.join(' && ');
-        await connExec(conn, command);
-        spinner.succeed('远程命令执行完毕');
+        const err = await connExec(conn, command).catch((_err: unknown) => _err as Error);
+        if (err) {
+          spinner.fail(`远程命令执行失败: ${chalk.red(err.message)}`);
+        } else {
+          spinner.succeed('远程命令执行完毕');
+        }
       }
 
       if (onCompleted) {
