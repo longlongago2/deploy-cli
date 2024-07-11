@@ -9,12 +9,8 @@ export interface CleanOptions {
   dir: string;
 }
 
-export async function clean(options: CleanOptions, conn: DeployClient) {
-  if (!options) {
-    throw new Error('Function clean: options is required');
-  }
-
-  if (!conn?.connected) {
+export async function clean(options: CleanOptions, conn: DeployClient): Promise<void> {
+  if (!conn.connected) {
     throw new Error('Function clean: ssh server not connected');
   }
 

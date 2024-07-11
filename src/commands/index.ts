@@ -36,24 +36,24 @@ export interface ConnectArgv {
 export interface BackupArgv {
   source: string;
   dest: string;
-  config: string;
+  config?: string;
 }
 
 export interface CleanArgv {
   dir: string;
-  config: string;
+  config?: string;
 }
 
 export interface UploadArgv {
   dir: string;
   target: string;
-  config: string;
+  config?: string;
 }
 
-export function initCommands() {
-  const __filename = url.fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const pkg = readProjectPackageJson(__dirname);
+export function initCommands(): void {
+  const filename = url.fileURLToPath(import.meta.url);
+  const dirname = path.dirname(filename);
+  const pkg = readProjectPackageJson(dirname);
 
   if (!pkg) {
     throw new Error('package.json not found');
@@ -62,7 +62,7 @@ export function initCommands() {
   program
     .name('deploy')
     .description('CLI for deploy project to server | CLI 部署工具')
-    .version(pkg.version || '0.0.0')
+    .version(pkg.version ?? '0.0.0')
     .option('-c, --config', 'config file path')
     .action(async (argv: Partial<DeployArgv>) => {
       try {
@@ -97,11 +97,11 @@ export function initCommands() {
   program
     .command('connect')
     .description('test the connection to server | 服务器测试连接')
-    .option('-h, --host <host>', 'server address')
-    .option('-p, --port <port>', 'server port', String(DEFAULT_SSH_PORT))
-    .option('-u, --username <username>', 'server username')
-    .option('-w, --password <password>', 'server password')
-    .option('-k, --privateKey <privateKey>', 'SSH private key path')
+    .option('-h, --host <host>', 'ssh server address')
+    .option('-p, --port <port>', 'ssh server port', String(DEFAULT_SSH_PORT))
+    .option('-u, --username <username>', 'ssh server username')
+    .option('-w, --password <password>', 'ssh server password')
+    .option('-k, --privateKey <privateKey>', 'ssh private key path')
     .option('-c, --config <config>', 'config file path')
     .action(async (argv: Partial<ConnectArgv>) => {
       try {
@@ -131,25 +131,34 @@ export function initCommands() {
   program
     .command('backup')
     .description('backup remote project from server to local | 备份服务器项目到本地')
-    .option('-s, --source <source>', 'server source path')
-    .option('-d, --dest <dest>', 'local dest path', 'backups')
+    .option('-s, --source <source>', 'server source dir')
+    .option('-d, --dest <dest>', 'local dest dir', 'backups')
     .option('-c, --config <config>', 'config file path')
-    .action(async (options: Partial<BackupArgv>) => {
+    .action(async (options: BackupArgv) => {
       try {
+        if (!options.dest) {
+          throw new Error('local dest dir is required');
+        }
+        if (!options.source) {
+          throw new Error('ssh server source dir is required');
+        }
         const { config: configFilePath, ..._backupOptions } = options;
         // 只读取配置文件连接服务器
         const result = await readDeployConfig(configFilePath);
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
-        const conn = await connect(result.config);
-        // 处理备份配置：合并配置文件和命令行参数的配置，命令行参数优先级高
         const deployConfig = result.config;
-        const dest = deployConfig.backupDir
-          ? ensureAbsolutePath(deployConfig.backupDir)
-          : path.resolve(ensureAbsolutePath(deployConfig.target), '../backups'); // 不填默认备份在 target 同级目录下的 backups 文件夹
+        const conn = await connect({
+          host: deployConfig.host,
+          port: deployConfig.port,
+          username: deployConfig.username,
+          password: deployConfig.password,
+          privateKey: deployConfig.privateKey,
+        });
+        // 处理备份配置，只使用命令行参数的配置
+        const dest = ensureAbsolutePath(_backupOptions.dest);
         const backupOptions = {
-          source: deployConfig.remoteDir,
+          source: _backupOptions.source,
           dest,
-          ..._backupOptions,
         };
         await backup(backupOptions, conn);
         process.exit(0);
@@ -162,22 +171,19 @@ export function initCommands() {
   program
     .command('clean')
     .description('clean server directory | 清除服务器目录')
-    .option('-d, --dir <dir>', 'remote server directory')
+    .option('-d, --dir <dir>', 'ssh server directory')
     .option('-c, --config <config>', 'config file path')
-    .action(async (options: Partial<CleanArgv>) => {
+    .action(async (options: CleanArgv) => {
       try {
+        if (!options.dir) {
+          throw new Error('ssh server directory is required');
+        }
         const { config: configFilePath, ..._cleanOptions } = options;
         // 只读取配置文件连接服务器
         const result = await readDeployConfig(configFilePath);
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
         const conn = await connect(result.config);
-        // 处理清理配置：合并配置文件和命令行参数的配置，命令行参数优先级高
-        const deployConfig = result.config;
-        const cleanOptions = {
-          dir: deployConfig.remoteDir,
-          ..._cleanOptions,
-        };
-        await clean(cleanOptions, conn);
+        await clean(_cleanOptions, conn);
         process.exit(0);
       } catch (error) {
         console.error(`😭 清理失败：${chalk.red((error as Error).message)}\n`);
@@ -187,23 +193,26 @@ export function initCommands() {
 
   program
     .command('upload')
-    .description('upload local project dist to server | 上传本地项目到服务器')
-    .option('-d, --dir <dir>', 'remote server directory')
+    .description('upload local project dist to ssh server | 上传本地项目到ssh服务器')
+    .option('-d, --dir <dir>', 'ssh server directory')
     .option('-t, --target <target>', 'local project source path')
     .option('-c, --config <config>', 'config file path')
-    .action(async (options: Partial<UploadArgv>) => {
+    .action(async (options: UploadArgv) => {
       try {
+        if (!options.dir) {
+          throw new Error('ssh server directory is required');
+        }
+        if (!options.target) {
+          throw new Error('local project source path is required');
+        }
         const { config: configFilePath, ..._uploadOptions } = options;
         // 只读取默认配置文件
         const result = await readDeployConfig(configFilePath);
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
         const conn = await connect(result.config);
-        // 处理上传配置：合并配置文件和命令行参数的配置，命令行参数优先级高
-        const deployConfig = result.config;
         const uploadOptions = {
-          target: ensureAbsolutePath(deployConfig.target),
-          dir: deployConfig.remoteDir,
-          ..._uploadOptions,
+          target: ensureAbsolutePath(_uploadOptions.target),
+          dir: _uploadOptions.dir,
         };
         await upload(uploadOptions, conn);
         process.exit(0);

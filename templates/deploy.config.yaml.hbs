@@ -8,27 +8,42 @@ port: 22
 username: root
 
 # 本地需要部署的源文件路径
-target: ./dist
+# target: ./dist
 
 # 部署到SSH服务器的目标路径
-remoteDir: /var/www/html
+# remoteDir: /var/www/html
 
 # 密码，非必填
-password:
+# password:
 
 # 私钥，非必填
-privateKey:
+# privateKey:
 
 # 本地备份目录
-backupDir: ./backups
+# backupDir: ./backups
 
 # 是否自动备份
-autoBackup: true
+# autoBackup: true
 
 # 发布前是否自动清理服务器remoteDir目录
-autoClean: false
+# autoClean: false
 
 # 部署后执行的命令（数组）
 # deployedCommands:
 #   - java -jar /var/www/html/app.jar
 #   - pm2 restart app
+
+# 部署任务（数组）
+# tasks:
+#   - target: ./dist
+#     remoteDir: /var/www/html
+#     autoBackup: false
+#     autoClean: false
+#     deployedCommands:
+#       - java -jar /var/www/html/app.jar
+#   - target: ./dist2
+#     remoteDir: /var/www/html2
+#     autoBackup: false
+#     autoClean: false
+#     deployedCommands:
+#       - java -jar /var/www/html2/app.jar

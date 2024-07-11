@@ -39,14 +39,10 @@ export interface DeployClient extends Client {
  * 连接服务器
  * @param options - 连接服务器配置
  */
-export async function connect(options: ConnectOptions) {
-  if (!options) {
-    throw new Error('function connect: options is required');
-  }
-
+export async function connect(options: ConnectOptions): Promise<DeployClient> {
   const { host, port = DEFAULT_SSH_PORT, username, password, privateKey } = options;
 
-  const passport = password || privateKey;
+  const passport = password ?? privateKey;
 
   const _privateKey = privateKey && ensureAbsolutePath(privateKey);
 
@@ -56,7 +52,7 @@ export async function connect(options: ConnectOptions) {
     // 如果没有密码和私钥，则交互要求用户输入密码
     console.log(chalk.black.bold.bgYellow('    Server Account    '));
     console.log(`${chalk.gray.underline(' USERNAME ')}: ${chalk.gray(username)}`);
-    _password = await readlineSync.question(`${chalk.gray.underline(' PASSWORD ')}: `, {
+    _password = readlineSync.question(`${chalk.gray.underline(' PASSWORD ')}: `, {
       hideEchoBack: true,
     });
     // 输入完成后清屏，防止密码暴露在终端

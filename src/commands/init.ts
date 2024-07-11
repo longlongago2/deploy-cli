@@ -29,10 +29,10 @@ const mapToExt = {
   },
 };
 
-export function init(options: InitOptions) {
-  const type = options?.type ?? 'javascript';
-  const module = options?.module ?? 'cjs';
-  let ext;
+export function init(options: InitOptions): void {
+  const type = options.type ?? 'javascript';
+  const module = options.module ?? 'cjs';
+  let ext = '.cjs';
   if (type === 'javascript') {
     ext = mapToExt[type][module];
   } else {
@@ -48,21 +48,21 @@ export function init(options: InitOptions) {
   const spinner = ora(`正在创建配置文件：deploy.config${ext}`).start();
 
   try {
-    const __filename = url.fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const rootPath = findProjectRoot(__dirname);
-    const pkg = readProjectPackageJson(__dirname);
+    const filename = url.fileURLToPath(import.meta.url);
+    const dirname = path.dirname(filename);
+    const rootPath = findProjectRoot(dirname);
+    const pkg = readProjectPackageJson(dirname);
     if (!(rootPath && pkg?.name)) {
       throw new Error('Function init: project package.json name not found');
     }
-    let templateFilePath; // 模板文件路径
+    let templateFilePath = ''; // 模板文件路径
     let data = {}; // 模板参数
     if (type === 'json') {
-      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.json.hbs');
+      templateFilePath = path.resolve(dirname, '../../templates/deploy.config.json.hbs');
     } else if (type === 'yaml') {
-      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.yaml.hbs');
+      templateFilePath = path.resolve(dirname, '../../templates/deploy.config.yaml.hbs');
     } else {
-      templateFilePath = path.resolve(__dirname, '../../templates/deploy.config.js.hbs');
+      templateFilePath = path.resolve(dirname, '../../templates/deploy.config.js.hbs');
       data = {
         lib: pkg.name,
         moduleExportResolution: ext === '.cjs' ? 'module.exports =' : 'export default',

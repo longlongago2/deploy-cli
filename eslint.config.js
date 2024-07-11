@@ -25,20 +25,21 @@ export default tsEslint.config(
       'coverage',
       '**/backup/',
       '**/backups/',
-      '**/*.config.js',
-      '**/*.config.mjs',
-      '**/*.config.cjs',
+      '**/*.config.{js,mjs,cjs,ts}',
     ],
   },
   jsEslint.configs.recommended,
-  ...tsEslint.configs.recommended,
+  ...tsEslint.configs.all,
   eslintConfigPrettier,
   eslintPluginPrettierRecommended,
   {
     rules: {
       'prettier/prettier': 'warn',
       '@typescript-eslint/no-explicit-any': 'off', // 作为library项目，允许使用 any
-      'no-await-in-loop': 'error', // 禁止在循环中使用 await
+      '@typescript-eslint/prefer-readonly-parameter-types': 'off',
+      '@typescript-eslint/strict-boolean-expressions': 'off',
+      '@typescript-eslint/no-magic-numbers': 'off',
+      '@typescript-eslint/max-params': 'off',
     },
   },
 );

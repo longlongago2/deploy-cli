@@ -1,4 +1,5 @@
 import path from 'node:path';
+import process from 'node:process';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import { ensureAbsolutePath, existsRemoteDir, connExec, DEFAULT_SSH_PORT } from '../utils.js';
@@ -9,7 +10,7 @@ import { upload } from './upload.js';
 import type { ConnectOptions, DeployClient } from './connect.js';
 import ora from 'ora';
 
-export interface ConfigOptions extends ConnectOptions {
+export interface TaskOptions {
   /**
    * 本地项目资源路径（支持目录和单个文件）
    */
@@ -49,26 +50,15 @@ export interface ConfigOptions extends ConnectOptions {
   onCompleted?: (conn: DeployClient) => void | Promise<void>;
 }
 
-export async function deploy(options: ConfigOptions) {
-  const {
-    host,
-    port = DEFAULT_SSH_PORT,
-    username,
-    password,
-    privateKey,
-    target,
-    remoteDir,
-    backupDir,
-    autoBackup = true,
-    autoClean = false,
-    deployedCommands,
-    onCompleted,
-  } = options;
+export interface DeployOptions extends ConnectOptions {
+  tasks?: TaskOptions[];
+}
+
+export async function deploy(options: DeployOptions): Promise<void> {
+  const { host, port = DEFAULT_SSH_PORT, username, password, privateKey, tasks = [] } = options;
+
   // 确保所有路径全部转为绝对路径（相对于process.cwd()）
   const _privateKey = privateKey && ensureAbsolutePath(privateKey);
-  const _target = ensureAbsolutePath(target);
-  // 默认备份路径为 target 同级目录下的 backups 文件夹
-  const _backupDir = backupDir ? ensureAbsolutePath(backupDir) : path.resolve(_target, '../backups');
 
   // 连接服务器
   const conn = await connect({
@@ -79,64 +69,99 @@ export async function deploy(options: ConfigOptions) {
     privateKey: _privateKey,
   });
 
-  const targetPathStat = await fs.exists(_target); // 目录是否存在
-  const remoteDirStat = await existsRemoteDir(conn, remoteDir); // 远程目录是否存在
+  let outputs = `
+---------------------------------------------------------------
+                        🚀 SSH 服务器信息
+---------------------------------------------------------------
+服务器地址: ${chalk.bold.green(host)}
+服务器端口: ${chalk.bold.green(port)}
+SSH 用户名: ${chalk.bold.green(username)}
+----------------------- 🚩 部署任务 ---------------------------`;
 
-  console.log(`
----------------------------------------------------------------
-                        🚀 部署配置
----------------------------------------------------------------
-服务器地址:   ${chalk.bold.green(host)}
-服务器端口:   ${chalk.bold.green(port)}
-SSH 用户名:   ${chalk.bold.green(username)}
-前置自动备份: ${chalk.bold.green(autoBackup ? '是' : '否')}
-前置自动清理: ${chalk.bold.green(autoClean ? '是' : '否')}
------------------------ 🚩 环境检测 ---------------------------
-远程发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(remoteDir)} 
-本地资源目录: ${targetPathStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(_target)}
-本地备份路径: ${chalk.green('[*]')} - ${chalk.bold.green(_backupDir)}
----------------------------------------------------------------
-${chalk.bold.bgRed(' 注意 ')} ${chalk.gray('✓ (pass) | ✗ (fail) | * (auto)')}
-`);
-
-  const necessary = targetPathStat && remoteDirStat;
-  if (!necessary) {
-    console.log(chalk.red('❌ 部署环境检测未通过，部署终止'));
-    conn.end();
-    return;
+  if (!(Array.isArray(tasks) && tasks.length > 0)) {
+    // 没有部署任务
+    outputs += `\n${chalk.red('❌ 部署任务为空，部署终止')}
+---------------------------------------------------------------`;
+    console.log(outputs);
+    return; // 部署终止
   }
 
-  // 正式开始部署
+  console.log(outputs);
+
+  // 正式开始部署，顺序执行部署任务
   try {
-    if (autoBackup) {
-      await backup({ source: remoteDir, dest: _backupDir }, conn);
-    }
+    for (let index = 0; index < tasks.length; index++) {
+      const task = tasks[index];
 
-    if (autoClean) {
-      await clean({ dir: remoteDir }, conn);
-    }
+      const {
+        target,
+        remoteDir,
+        backupDir,
+        autoBackup = true,
+        autoClean = false,
+        deployedCommands,
+        onCompleted,
+      } = task;
 
-    await upload({ target: _target, dir: remoteDir }, conn);
+      const _target = ensureAbsolutePath(target);
+      const _backupDir = backupDir
+        ? ensureAbsolutePath(backupDir)
+        : path.resolve(process.cwd(), './backups'); // 默认备份目录: cwd 目录下 backups 文件夹
+      const targetPathStat = await fs.exists(_target); // 目录是否存在
+      const remoteDirStat = await existsRemoteDir(conn, remoteDir); // 远程目录是否存在
+      const necessary = targetPathStat && remoteDirStat;
 
-    if (Array.isArray(deployedCommands) && deployedCommands.length > 0) {
-      const spinner = ora('执行远程命令').start();
-      const command = deployedCommands.join(' && ');
-      await connExec(conn, command);
-      spinner.succeed('远程命令执行完毕');
-    }
+      console.log(`${chalk.bold.yellow(`🚩 任务${index + 1}`)}  - ${necessary ? chalk.green('⚡ 该任务准备就绪') : chalk.red('❌ 环境检测未通过，该任务终止')}
 
-    if (onCompleted) {
-      const spinner = ora('执行部署完成回调').start();
-      const cb = onCompleted(conn);
-      if (cb instanceof Promise) {
-        await cb;
-        spinner.succeed('执行部署完成回调结束');
-      } else {
-        spinner.succeed('执行部署完成回调结束');
+  资源路径: ${targetPathStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(_target)}
+  发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(remoteDir)}
+  备份目录: ${chalk.green('[*]')} - ${chalk.bold.green(_backupDir)}
+  自动备份: ${autoBackup ? chalk.green('是') : chalk.red('否')}
+  自动清理: ${autoClean ? chalk.green('是') : chalk.red('否')}
+  部署命令: ${deployedCommands && deployedCommands.length > 0 ? chalk.green('有') : chalk.red('无')}
+  部署回调: ${onCompleted ? chalk.green('有') : chalk.red('无')}
+`);
+
+      if (!necessary) {
+        if (index !== tasks.length - 1) {
+          console.log(chalk.yellow('---------------------------------------------------------------'));
+        }
+        continue; // 当前任务不满足条件，继续下一个任务，不能使用 return，否则会直接终止 deploy 函数
+      }
+
+      if (autoBackup) {
+        await backup({ source: remoteDir, dest: _backupDir }, conn);
+      }
+
+      if (autoClean) {
+        await clean({ dir: remoteDir }, conn);
+      }
+
+      await upload({ target: _target, dir: remoteDir }, conn);
+
+      if (Array.isArray(deployedCommands) && deployedCommands.length > 0) {
+        const spinner = ora('执行远程命令').start();
+        const command = deployedCommands.join(' && ');
+        await connExec(conn, command);
+        spinner.succeed('远程命令执行完毕');
+      }
+
+      if (onCompleted) {
+        const spinner = ora('执行部署完成回调').start();
+        const cb = onCompleted(conn);
+        if (cb instanceof Promise) {
+          await cb;
+          spinner.succeed('执行部署完成回调结束');
+        } else {
+          spinner.succeed('执行部署完成回调结束');
+        }
+      }
+
+      console.log(chalk.green(`🎉 部署完成`));
+      if (index !== tasks.length - 1) {
+        console.log(chalk.yellow('---------------------------------------------------------------'));
       }
     }
-
-    console.log(chalk.green('🎉 部署成功'));
     conn.end();
   } catch (error) {
     conn.end();

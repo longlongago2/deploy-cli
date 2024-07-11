@@ -7,8 +7,9 @@ import yaml from 'js-yaml';
 import { createRequire } from 'node:module';
 import type { ArchiverOptions } from 'archiver';
 import type { FileEntryWithStats, SFTPWrapper } from 'ssh2';
-import type { ConfigOptions } from './commands/deploy.js';
-import type { DeployClient } from './commands/connect.js';
+import type { ConfigOptions } from './index.js';
+import type { ConnectOptions, DeployClient } from './commands/connect.js';
+import type { DeployOptions } from './commands/deploy.js';
 
 /**
  * 默认的 SSH 端口
@@ -29,7 +30,7 @@ export const DEFAULT_CONFIG_PATHS = [
 /**
  * 获取带下划线的日期时间字符串
  */
-export function generateTimestampWithUnderline() {
+export function generateTimestampWithUnderline(): string {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0'); // 月份是从0开始的
@@ -53,8 +54,8 @@ export function validateDeployConfig(config: unknown): ValidateDeployConfigResul
   if (
     !(
       Object.prototype.hasOwnProperty.call(config, 'host') &&
-      typeof (config as ConfigOptions).host === 'string' &&
-      (config as ConfigOptions).host.trim() !== ''
+      typeof (config as ConnectOptions).host === 'string' &&
+      (config as ConnectOptions).host.trim() !== ''
     )
   ) {
     return { valid: false, err: new Error('Config: invalid or missing host') };
@@ -62,37 +63,13 @@ export function validateDeployConfig(config: unknown): ValidateDeployConfigResul
   if (
     !(
       Object.prototype.hasOwnProperty.call(config, 'username') &&
-      typeof (config as ConfigOptions).username === 'string' &&
-      (config as ConfigOptions).username.trim() !== ''
+      typeof (config as ConnectOptions).username === 'string' &&
+      (config as ConnectOptions).username.trim() !== ''
     )
   ) {
     return {
       valid: false,
       err: new Error('Config: invalid or missing username'),
-    };
-  }
-  if (
-    !(
-      Object.prototype.hasOwnProperty.call(config, 'target') &&
-      typeof (config as ConfigOptions).target === 'string' &&
-      (config as ConfigOptions).target.trim() !== ''
-    )
-  ) {
-    return {
-      valid: false,
-      err: new Error('Config: invalid or missing target'),
-    };
-  }
-  if (
-    !(
-      Object.prototype.hasOwnProperty.call(config, 'remoteDir') &&
-      typeof (config as ConfigOptions).remoteDir === 'string' &&
-      (config as ConfigOptions).remoteDir.trim() !== ''
-    )
-  ) {
-    return {
-      valid: false,
-      err: new Error('Config: invalid or missing remoteDir'),
     };
   }
   return { valid: true };
@@ -102,55 +79,72 @@ export function validateDeployConfig(config: unknown): ValidateDeployConfigResul
  * 加载部署配置文件
  * @param configPath - 配置文件绝对路径
  */
-export async function loadDeployConfig(configPath: string) {
+export async function loadConfigFile(configPath: string): Promise<ConfigOptions> {
   const exists = await fs.pathExists(configPath);
   if (!exists) {
-    return { err: new Error(`Config file not found: ${configPath}`) };
+    throw new Error(`Config file not found: ${configPath}`);
   }
   const isAbsolute = path.isAbsolute(configPath);
   if (!isAbsolute) {
-    return {
-      err: new Error(`Config file path must be absolute: ${configPath}`),
-    };
+    throw new Error(`Config file path must be absolute: ${configPath}`);
   }
-  try {
-    const ext = path.extname(configPath).toLowerCase();
-    let config: ConfigOptions;
-    if (ext === '.json') {
-      config = (await fs.readJson(configPath)) as ConfigOptions;
-    } else if (ext === '.cjs') {
-      // 使用 CommonJS 模块加载
-      const require = createRequire(import.meta.url);
-      config = require(configPath) as ConfigOptions;
-    } else if (ext === '.js' || ext === '.mjs') {
-      // 使用 ES module 加载
-      const fileUrl = url.pathToFileURL(configPath).href;
-      const module = (await import(fileUrl)) as { default: ConfigOptions };
-      config = module.default || module;
-    } else if (ext === '.yaml' || ext === '.yml') {
-      // 加载 YAML 文件
-      config = yaml.load(await fs.readFile(configPath, 'utf-8')) as ConfigOptions;
-    } else {
-      return { err: new Error(`Unsupported config file type: ${configPath}`) };
-    }
-    // 验证配置文件
-    const result = validateDeployConfig(config);
-    if (!result.valid) {
-      return { err: result.err };
-    }
-    return { config };
-  } catch (err) {
-    return { err: err as Error };
+  let config: ConfigOptions = { host: '', username: '' };
+  const ext = path.extname(configPath).toLowerCase();
+  if (ext === '.json') {
+    config = (await fs.readJson(configPath)) as ConfigOptions;
+  } else if (ext === '.cjs') {
+    // 使用 CommonJS 模块加载
+    const require = createRequire(import.meta.url);
+    config = require(configPath) as ConfigOptions;
+  } else if (ext === '.js' || ext === '.mjs') {
+    // 使用 ES module 加载
+    const fileUrl = url.pathToFileURL(configPath).href;
+    const module = (await import(fileUrl)) as { default?: ConfigOptions };
+    config = (module.default ?? module) as ConfigOptions;
+  } else if (ext === '.yaml' || ext === '.yml') {
+    // 加载 YAML 文件
+    config = yaml.load(await fs.readFile(configPath, 'utf-8')) as ConfigOptions;
+  } else {
+    throw new Error(`Unsupported config file type: ${configPath}`);
   }
+  // 验证配置文件
+  const result = validateDeployConfig(config);
+  if (!result.valid) {
+    throw result.err;
+  }
+  return config;
+}
+
+/**
+ * 转换原始配置为部署配置
+ * @param config - 原始配置，配置文件中的内容
+ */
+export function transformToDeployConfig(config: ConfigOptions): DeployOptions {
+  const { host, port, username, password, privateKey, tasks, ...taskOptions } = config;
+  const deployConfig: DeployOptions = {
+    host,
+    port,
+    username,
+    password,
+    privateKey,
+    tasks: [],
+  };
+  // 如果配置文件中有 tasks 属性，则合并到 DeployOptions 根属性上
+  if (Array.isArray(tasks) && tasks.length > 0) {
+    deployConfig.tasks = tasks.map((task) => ({ ...taskOptions, ...task }));
+  }
+  return deployConfig;
 }
 
 /**
  * 读取部署配置
  * @param configPath - 配置文件路径，非必填
  */
-export async function readDeployConfig(configPath?: string) {
+export async function readDeployConfig(
+  configPath?: string,
+): Promise<{ config: DeployOptions; path: string }> {
   // 配置文件绝对路径，把所有路径都转为绝对路径，因为配置文件有可能是相对路径
-  let configAbsolutePath;
+  let configAbsolutePath = '';
   if (!configPath) {
     // 用户不提供，使用默认路径
     for (const relativePath of DEFAULT_CONFIG_PATHS) {
@@ -174,11 +168,10 @@ export async function readDeployConfig(configPath?: string) {
     );
   }
   // 加载配置文件
-  const { config, err } = await loadDeployConfig(configAbsolutePath);
-  if (err) {
-    throw new Error(`Load config file failed (${configAbsolutePath}): ${err.message}`);
-  }
-  return { config, path: configAbsolutePath };
+  const configOptions = await loadConfigFile(configAbsolutePath);
+  // 将原始配置转换为部署配置
+  const deployConfig = transformToDeployConfig(configOptions);
+  return { config: deployConfig, path: configAbsolutePath };
 }
 
 /**
@@ -186,7 +179,7 @@ export async function readDeployConfig(configPath?: string) {
  * @param conn - 已连接的 SSH 实例
  * @param remoteDir - 远程目录
  */
-export async function existsRemoteDir(conn: DeployClient, remoteDir: string) {
+export async function existsRemoteDir(conn: DeployClient, remoteDir: string): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     conn.sftp((err, sftp) => {
       if (err) {
@@ -210,7 +203,11 @@ export async function existsRemoteDir(conn: DeployClient, remoteDir: string) {
  * @param remotePath - 远程文件路径
  * @param localPath - 本地文件路径
  */
-export async function sftpFastGet(sftp: SFTPWrapper, remotePath: string, localPath: string) {
+export async function sftpFastGet(
+  sftp: SFTPWrapper,
+  remotePath: string,
+  localPath: string,
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     // IMPORTANT:
     // 由于SFTP协议是基于POSIX规范的，所以路径分隔符必须是`/`，而非`\`
@@ -235,7 +232,11 @@ export async function sftpFastGet(sftp: SFTPWrapper, remotePath: string, localPa
  * @param localPath - 本地文件路径
  * @param remotePath - 远程文件路径
  */
-export async function sftpFastPut(sftp: SFTPWrapper, localPath: string, remotePath: string) {
+export async function sftpFastPut(
+  sftp: SFTPWrapper,
+  localPath: string,
+  remotePath: string,
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const _localPath = slash(localPath);
     const _remotePath = slash(remotePath);
@@ -254,7 +255,7 @@ export async function sftpFastPut(sftp: SFTPWrapper, localPath: string, remotePa
  * @param sftp - SFTP协议 实例
  * @param remotePath - 远程目录路径
  */
-export async function sftpMkdir(sftp: SFTPWrapper, remotePath: string) {
+export async function sftpMkdir(sftp: SFTPWrapper, remotePath: string): Promise<void> {
   const _remotePath = slash(remotePath);
   return new Promise<void>((resolve, reject) => {
     sftp.mkdir(_remotePath, (err) => {
@@ -272,7 +273,7 @@ export async function sftpMkdir(sftp: SFTPWrapper, remotePath: string) {
  * @param sftp - SFTP协议 实例
  * @param remoteDir - 远程目录路径
  */
-export async function sftpRmdir(sftp: SFTPWrapper, remoteDir: string) {
+export async function sftpRmdir(sftp: SFTPWrapper, remoteDir: string): Promise<void> {
   const _remoteDir = slash(remoteDir);
   return new Promise<void>((resolve, reject) => {
     sftp.rmdir(_remoteDir, (err) => {
@@ -290,7 +291,7 @@ export async function sftpRmdir(sftp: SFTPWrapper, remoteDir: string) {
  * @param conn - 已连接的 SSH 实例
  * @param remoteDir - 远程目录路径
  */
-export async function connRmRf(conn: DeployClient, remoteDir: string) {
+export async function connRmRf(conn: DeployClient, remoteDir: string): Promise<void> {
   const _remoteDir = slash(remoteDir);
   return new Promise<void>((resolve, reject) => {
     conn.exec(`rm -rf ${_remoteDir}`, (err, stream) => {
@@ -310,7 +311,7 @@ export async function connRmRf(conn: DeployClient, remoteDir: string) {
  * @param conn - 已连接的 SSH 实例
  * @param command - 执行的命令
  */
-export async function connExec(conn: DeployClient, command: string) {
+export async function connExec(conn: DeployClient, command: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     conn.exec(command, (err, stream) => {
       if (err) {
@@ -330,7 +331,7 @@ export async function connExec(conn: DeployClient, command: string) {
  * @param remotePath - 远程文件路径
  * @returns
  */
-export async function sftpUnlink(sftp: SFTPWrapper, remotePath: string) {
+export async function sftpUnlink(sftp: SFTPWrapper, remotePath: string): Promise<void> {
   const _remotePath = slash(remotePath);
   return new Promise<void>((resolve, reject) => {
     sftp.unlink(_remotePath, (err) => {
@@ -349,7 +350,7 @@ export async function sftpUnlink(sftp: SFTPWrapper, remotePath: string) {
  * @param remotePath - 远程目录路径
  * @returns
  */
-export async function sftpReaddir(sftp: SFTPWrapper, remotePath: string) {
+export async function sftpReaddir(sftp: SFTPWrapper, remotePath: string): Promise<FileEntryWithStats[]> {
   const _remotePath = slash(remotePath);
   return new Promise<FileEntryWithStats[]>((resolve, reject) => {
     sftp.readdir(_remotePath, (err, list) => {
@@ -373,7 +374,7 @@ export async function sftpFastGetDir(
   remoteDir: string,
   localDir: string,
   callback?: (file: FileEntryWithStats) => void,
-) {
+): Promise<void> {
   const list = await sftpReaddir(sftp, remoteDir);
   const task = [];
   for (const item of list) {
@@ -401,7 +402,7 @@ export async function sftpFastPutDir(
   localDir: string,
   remoteDir: string,
   callback?: (file: FileEntryWithStats) => void,
-) {
+): Promise<void> {
   const stats = fs.statSync(localDir);
   if (stats.isDirectory()) {
     const list = fs.readdirSync(localDir, { withFileTypes: true });
@@ -411,7 +412,9 @@ export async function sftpFastPutDir(
       const remotePath = path.join(remoteDir, item.name);
       if (item.isDirectory()) {
         task.push(
-          sftpMkdir(sftp, remotePath).then(() => sftpFastPutDir(sftp, localPath, remotePath, callback)),
+          sftpMkdir(sftp, remotePath).then(async () =>
+            sftpFastPutDir(sftp, localPath, remotePath, callback),
+          ),
         );
       } else {
         task.push(sftpFastPut(sftp, localPath, remotePath));
@@ -429,7 +432,7 @@ export async function sftpFastPutDir(
  * @param sftp - SFTP协议 实例
  * @param remoteDir - 远程目录
  */
-export async function sftpIsEmptyDir(sftp: SFTPWrapper, remoteDir: string) {
+export async function sftpIsEmptyDir(sftp: SFTPWrapper, remoteDir: string): Promise<boolean> {
   const list = await sftpReaddir(sftp, remoteDir);
   return list.length === 0;
 }
@@ -438,7 +441,7 @@ export async function sftpIsEmptyDir(sftp: SFTPWrapper, remoteDir: string) {
  * 创建 SFTP 实例
  * @param conn - 已连接的 SSH 实例
  */
-export async function createSFTP(conn: DeployClient) {
+export async function createSFTP(conn: DeployClient): Promise<SFTPWrapper> {
   return new Promise<SFTPWrapper>((resolve, reject) => {
     conn.sftp((err, sftp) => {
       if (err) {
@@ -455,7 +458,7 @@ export async function createSFTP(conn: DeployClient) {
  * @param dirPath - 压缩目标
  * @param options - 配置项
  */
-export async function zipArchiver(dirPath: string, options: ArchiverOptions = {}) {
+export async function zipArchiver(dirPath: string, options: ArchiverOptions = {}): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const zipFilePath = `${dirPath}.zip`;
     const output = fs.createWriteStream(zipFilePath);
@@ -504,23 +507,23 @@ export function findProjectRoot(startDir: string): string | null {
 }
 
 export interface PackageJson {
+  [key: string]: any; // 允许其他任意字段
   name?: string;
   version?: string;
   description?: string;
   main?: string;
-  scripts?: { [key: string]: string };
-  dependencies?: { [key: string]: string };
-  devDependencies?: { [key: string]: string };
-  peerDependencies?: { [key: string]: string };
-  optionalDependencies?: { [key: string]: string };
-  [key: string]: any; // 允许其他任意字段
+  scripts?: Record<string, string>;
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
 }
 
 /**
  * 读取项目 package.json
  * @param startDir - 起始位置
  */
-export function readProjectPackageJson(startDir: string) {
+export function readProjectPackageJson(startDir: string): PackageJson | null {
   const rootPath = findProjectRoot(startDir);
   let pkg: PackageJson | null = null;
   if (rootPath) {

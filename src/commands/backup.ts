@@ -28,12 +28,8 @@ export interface BackupOptions {
  * @param options - 备份配置
  * @param conn - 已连接的 SSH 实例
  */
-export async function backup(options: BackupOptions, conn: DeployClient) {
-  if (!options) {
-    throw new Error('Function backup: options is required');
-  }
-
-  if (!conn?.connected) {
+export async function backup(options: BackupOptions, conn: DeployClient): Promise<void> {
+  if (!conn.connected) {
     throw new Error('Function backup: ssh server not connected');
   }
 
@@ -44,7 +40,8 @@ export async function backup(options: BackupOptions, conn: DeployClient) {
   try {
     const localDir = ensureAbsolutePath(dest);
     const timestamp = generateTimestampWithUnderline();
-    const localBackupDir = path.resolve(localDir, `backup_${timestamp}`);
+    const remoteFolderName = path.basename(remoteDir);
+    const localBackupDir = path.resolve(localDir, `backup_${remoteFolderName}_${timestamp}`);
 
     // 检查远程目录是否存在
     const remoteDirStat = await existsRemoteDir(conn, remoteDir);

@@ -14,12 +14,8 @@ export interface UploadOptions {
    */
   dir: string;
 }
-export async function upload(options: UploadOptions, conn: DeployClient) {
-  if (!options) {
-    throw new Error('Function upload: options is required');
-  }
-
-  if (!conn?.connected) {
+export async function upload(options: UploadOptions, conn: DeployClient): Promise<void> {
+  if (!conn.connected) {
     throw new Error('Function upload: ssh server not connected');
   }
 
