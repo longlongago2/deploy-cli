@@ -402,20 +402,26 @@ export async function sftpFastPutDir(
   remoteDir: string,
   callback?: (file: FileEntryWithStats) => void,
 ) {
-  const list = fs.readdirSync(localDir, { withFileTypes: true });
-  const task = [];
-  for (const item of list) {
-    const localPath = path.join(localDir, item.name);
-    const remotePath = path.join(remoteDir, item.name);
-    if (item.isDirectory()) {
-      task.push(
-        sftpMkdir(sftp, remotePath).then(() => sftpFastPutDir(sftp, localPath, remotePath, callback)),
-      );
-    } else {
-      task.push(sftpFastPut(sftp, localPath, remotePath));
+  const stats = fs.statSync(localDir);
+  if (stats.isDirectory()) {
+    const list = fs.readdirSync(localDir, { withFileTypes: true });
+    const task = [];
+    for (const item of list) {
+      const localPath = path.join(localDir, item.name);
+      const remotePath = path.join(remoteDir, item.name);
+      if (item.isDirectory()) {
+        task.push(
+          sftpMkdir(sftp, remotePath).then(() => sftpFastPutDir(sftp, localPath, remotePath, callback)),
+        );
+      } else {
+        task.push(sftpFastPut(sftp, localPath, remotePath));
+      }
     }
+    await Promise.all(task);
+  } else {
+    const filename = path.basename(localDir);
+    await sftpFastPut(sftp, localDir, path.join(remoteDir, filename));
   }
-  await Promise.all(task);
 }
 
 /**

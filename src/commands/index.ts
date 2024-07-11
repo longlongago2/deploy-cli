@@ -189,7 +189,7 @@ export function initCommands() {
     .command('upload')
     .description('upload local project dist to server | 上传本地项目到服务器')
     .option('-d, --dir <dir>', 'remote server directory')
-    .option('-t, --target <target>', 'local project dist path')
+    .option('-t, --target <target>', 'local project source path')
     .option('-c, --config <config>', 'config file path')
     .action(async (options: Partial<UploadArgv>) => {
       try {

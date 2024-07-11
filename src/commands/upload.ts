@@ -45,7 +45,7 @@ export async function upload(options: UploadOptions, conn: DeployClient) {
     await sftpFastPutDir(sftp, localDir, remoteDir);
 
     // 上传成功
-    spinner.succeed('上传成功');
+    spinner.succeed('上传完毕');
     sftp.end();
   } catch (error) {
     spinner.clear();

@@ -17,11 +17,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
-    "skipLibCheck": true,
-    "paths": {
-      "root/*": ["./*"],
-      "src/*": ["src/*"]
-    }
+    "skipLibCheck": true
   },
-  "exclude": ["node_modules", "esm/", "*.config.*", "dist/"]
+  "exclude": ["node_modules", "esm/", "dist/", "build/", "lib/"],
 }

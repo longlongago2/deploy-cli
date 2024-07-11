@@ -11,7 +11,7 @@ import ora from 'ora';
 
 export interface ConfigOptions extends ConnectOptions {
   /**
-   * 本地项目 dist 路径
+   * 本地项目资源路径（支持目录和单个文件）
    */
   target: string;
 
@@ -120,8 +120,8 @@ ${chalk.bold.bgRed(' 注意 ')} ${chalk.gray('✓ (pass) | ✗ (fail) | * (auto)
 
     if (Array.isArray(deployedCommands) && deployedCommands.length > 0) {
       const spinner = ora('执行远程命令').start();
-      const tasks = deployedCommands.map((cmd) => connExec(conn, cmd));
-      await Promise.all(tasks);
+      const command = deployedCommands.join(' && ');
+      await connExec(conn, command);
       spinner.succeed('远程命令执行完毕');
     }
 
