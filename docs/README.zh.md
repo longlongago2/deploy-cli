@@ -53,17 +53,21 @@ Options:
 ```js
 /** @type {import("@nebulae-cli/deploy").ConfigOptions} */
 module.exports = {
-  host: "xxx.xx.xxx.x",
+  host: 'xxx.xx.xxx.x',
   port: 22,
-  username: "server_ssh_name",
-  target: "your/dist/path",
-  remoteDir: "/your/server/path",
-  autoBackup: true,
-  autoClean: false,
+  username: 'server_ssh_name',
   // password: '',
   // privateKey: '',
-  // backupDir: '',
-  deployedCommands: [], // 部署完成后执行的远程命令，例如：['pm2 restart xxx', 'java -jar xxx.jar'] 等
+  tasks: [
+    {
+      target: 'your/dist/path',
+      remoteDir: '/your/server/path',
+      autoBackup: true,
+      autoClean: false,
+      // backupDir: '',
+      // deployedCommands: [], // 部署完成后执行的远程命令，例如：['cd /var/applications', 'java -jar xxx.jar'], 多个命令会使用 && 合并
+    },
+  ],
 };
 ```
 

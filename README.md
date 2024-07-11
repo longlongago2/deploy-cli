@@ -35,6 +35,7 @@ npm install @nebulae-cli/deploy -D
 ```bash
 deploy init
 ```
+
 usage:
 
 ```bash
@@ -52,17 +53,21 @@ Options:
 ```js
 /** @type {import("@nebulae-cli/deploy").ConfigOptions} */
 module.exports = {
-  host: "xxx.xx.xxx.x",
+  host: 'xxx.xx.xxx.x',
   port: 22,
-  username: "server_ssh_name",
-  target: "your/dist/path",
-  remoteDir: "/your/server/path",
-  autoBackup: true,
-  autoClean: false,
+  username: 'server_ssh_name',
   // password: '',
   // privateKey: '',
-  // backupDir: '',
-  deployedCommands: [], // Remote commands executed after deployment is complete, for example: ['pm2 restart xxx', 'java -jar xxx.jar'], etc.
+  tasks: [
+    {
+      target: 'your/dist/path',
+      remoteDir: '/your/server/path',
+      autoBackup: true,
+      autoClean: false,
+      // backupDir: '',
+      // deployedCommands: [], // Remote commands executed after deployment, such as ['cd/var/applications', 'java - jar xxx. jar'], will use && to merge multiple commands
+    },
+  ],
 };
 ```
 
@@ -71,6 +76,7 @@ module.exports = {
 ```bash
 deploy connect
 ```
+
 usage:
 
 ```bash
