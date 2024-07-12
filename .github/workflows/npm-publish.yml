@@ -18,13 +18,20 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: esm # 上传的包名
+          path: ./esm # 将构建输出的目录上传
 
   publish-npm:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Setup .npmrc file to publish to npm
+      - uses: actions/download-artifact@v3
+        with:
+          name: esm # 下载的包名
+          path: ./esm # 将esm包下载到./esm目录
       - uses: actions/setup-node@v4
         with:
           node-version: 20
