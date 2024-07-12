@@ -20,7 +20,7 @@ jobs:
       - run: npm run build
       - uses: actions/upload-artifact@v3
         with:
-          name: esm # 上传的包名
+          name: esm # 上传的包名，通过上传下载来传递打包后的资源
           path: ./esm # 将构建输出的目录上传
 
   publish-npm:
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: esm # 下载的包名
-          path: ./esm # 将esm包下载到./esm目录
+          path: ./esm # 将esm包下载到./esm目录一起发布
       - uses: actions/setup-node@v4
         with:
           node-version: 20
