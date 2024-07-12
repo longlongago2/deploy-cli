@@ -1,4 +1,4 @@
-# This workflow will run build using node and then publish a package to npm when a release is created
+# This workflow will run build using node and then publish a package to npm when a release is published
 # 此工作流程将使用node运行构建，然后在release版本发布完成时将包发布到 npm
 # For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 
