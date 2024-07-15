@@ -17,6 +17,11 @@ export interface TaskOptions {
   name?: string;
 
   /**
+   * 是否禁用当前任务，默认 false
+   */
+  disabled?: boolean;
+
+  /**
    * 本地项目资源路径（支持目录和单个文件）
    */
   target: string;
@@ -83,7 +88,9 @@ export async function deploy(options: DeployOptions): Promise<void> {
 SSH 用户名: ${chalk.bold.green(username)}
 ----------------------- 🚩 部署任务 ---------------------------`;
 
-  if (!(Array.isArray(tasks) && tasks.length > 0)) {
+  // 获取任务列表：过滤掉 disabled 的任务
+  const _tasks = tasks.filter((task) => !task.disabled);
+  if (!(Array.isArray(_tasks) && _tasks.length > 0)) {
     // 没有部署任务
     outputs += `\n${chalk.red('❌ 部署任务为空，部署终止')}
 ---------------------------------------------------------------`;
@@ -96,8 +103,8 @@ SSH 用户名: ${chalk.bold.green(username)}
 
   // 正式开始部署，顺序执行部署任务
   try {
-    for (let index = 0; index < tasks.length; index++) {
-      const task = tasks[index];
+    for (let index = 0; index < _tasks.length; index++) {
+      const task = _tasks[index];
 
       const {
         name,
@@ -130,7 +137,7 @@ ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.r
 `);
 
       if (!necessary) {
-        if (index !== tasks.length - 1) {
+        if (index !== _tasks.length - 1) {
           console.log(chalk.yellow('---------------------------------------------------------------'));
         }
         continue; // 当前任务不满足条件，继续下一个任务，不能使用 return，否则会直接终止 deploy 函数
@@ -169,7 +176,7 @@ ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.r
       }
 
       console.log(chalk.green(`🎉 部署完成`));
-      if (index !== tasks.length - 1) {
+      if (index !== _tasks.length - 1) {
         console.log(chalk.yellow('---------------------------------------------------------------'));
       }
     }
