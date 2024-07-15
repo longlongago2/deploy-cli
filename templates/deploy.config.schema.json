@@ -59,6 +59,10 @@
       "items": {
         "type": "object",
         "properties": {
+          "name": {
+            "type": "string",
+            "description": "任务名称"
+          },
           "target": {
             "type": "string",
             "description": "本地项目 dist 路径"
@@ -93,5 +97,5 @@
       }
     }
   },
-  "required": ["target", "remoteDir", "host", "username"]
+  "required": ["host", "username"]
 }

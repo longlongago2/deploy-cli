@@ -12,6 +12,11 @@ import ora from 'ora';
 
 export interface TaskOptions {
   /**
+   * 任务名称
+   */
+  name?: string;
+
+  /**
    * 本地项目资源路径（支持目录和单个文件）
    */
   target: string;
@@ -86,6 +91,7 @@ SSH 用户名: ${chalk.bold.green(username)}
     return; // 部署终止
   }
 
+  outputs += `\n\n${chalk.gray('[✓]：通过；[✗]：失败；[*]：自动，存在失败项将终止当前任务')}\n`;
   console.log(outputs);
 
   // 正式开始部署，顺序执行部署任务
@@ -94,6 +100,7 @@ SSH 用户名: ${chalk.bold.green(username)}
       const task = tasks[index];
 
       const {
+        name,
         target,
         remoteDir,
         backupDir,
@@ -111,10 +118,10 @@ SSH 用户名: ${chalk.bold.green(username)}
       const remoteDirStat = await existsRemoteDir(conn, remoteDir); // 远程目录是否存在
       const necessary = targetPathStat && remoteDirStat;
 
-      console.log(`${chalk.bold.yellow(`🚩 任务${index + 1}`)}  - ${necessary ? chalk.green('⚡ 该任务准备就绪') : chalk.red('❌ 环境检测未通过，该任务终止')}
+      console.log(`🚩 ${chalk.bold.yellow(`任务${index + 1}`)}：${chalk.gray(name ?? '无标题')} - ${necessary ? chalk.green('⚡ 准备就绪') : chalk.red('❌ 环境缺失，该任务终止')}
 
-  资源路径: ${targetPathStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(_target)}
-  发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(remoteDir)}
+${chalk.red('*')} 资源路径: ${targetPathStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(_target)}
+${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(remoteDir)}
   备份目录: ${chalk.green('[*]')} - ${chalk.bold.green(_backupDir)}
   自动备份: ${autoBackup ? chalk.green('是') : chalk.red('否')}
   自动清理: ${autoClean ? chalk.green('是') : chalk.red('否')}
