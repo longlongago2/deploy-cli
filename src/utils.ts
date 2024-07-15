@@ -566,22 +566,30 @@ export function readProjectPackageJson(startDir: string): PackageJson | null {
  * @param filePath - 文件路径
  */
 export function openFile(filePath: string): ReturnType<typeof spawn> | null {
+  const _filePath = slash(filePath);
+
   let cmd = '';
+  let args: string[] = [];
+
   switch (process.platform) {
     case 'darwin':
       cmd = 'open';
+      args = [_filePath];
       break;
     case 'win32':
-      cmd = 'start';
+      cmd = 'cmd';
+      args = ['/c', 'start', _filePath];
       break;
     case 'linux':
       cmd = 'xdg-open';
+      args = [_filePath];
       break;
     default:
       break;
   }
+
   if (cmd) {
-    return spawn(cmd, [filePath], { stdio: 'inherit' });
+    return spawn(cmd, args, { stdio: 'inherit' });
   }
   return null;
 }

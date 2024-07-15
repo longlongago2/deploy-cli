@@ -10,6 +10,8 @@
 
 - ⚡ Supports individual step execution, such as `connect`, `clean`, `backup`, `upload`.
 
+- 🌍 Support global configuration
+
 ## Translations
 
 [简体中文](./docs/README.zh.md)
@@ -54,6 +56,7 @@ init(generate) deploy config file
 Options:
   -t, --type <type>      file type: "json" | "yaml" | "javascript" (default: "javascript")
   -m, --module <module>  javascript module type: "commonjs" | "cjs" | "esm" | "mjs" (default: "cjs")
+  -g, --global           generate global config file
   -h, --help             display help for command
 ```
 
@@ -71,6 +74,8 @@ module.exports = {
   // autoClean: false, // If the task attribute does not exist, it will take effect
   tasks: [
     {
+      name: 'task name',
+      disabled: false,
       target: 'your/dist/path',
       remoteDir: '/your/server/path',
       autoBackup: true,
@@ -140,3 +145,21 @@ you can add scripts to **package.json**
 ```
 
 then, use `npm run deploy`
+
+### 5. Other commands
+
+```bash
+deploy view config
+```
+
+useage:
+
+```bash
+Usage: deploy view [options] <config>
+
+view deploy config file info
+
+Options:
+  -c, --config <config>  config file path
+  -h, --help             display help for command
+```

@@ -39,17 +39,38 @@ export function init(options: InitOptions): void {
   const type = options.type ?? 'javascript';
   const module = options.module ?? 'cjs';
   const global = options.global ?? false;
+
   let ext = '.cjs';
   if (type === 'javascript') {
     ext = mapToExt[type][module];
   } else {
     ext = mapToExt[type];
   }
-  const exists = DEFAULT_CONFIG_PATHS.some((configPath) =>
-    fs.existsSync(path.resolve(process.cwd(), configPath)),
-  );
-  if (exists) {
-    throw new Error('Function init: config file already exists');
+
+  let existFilePath = '';
+  if (global) {
+    // 全局配置文件检测
+    for (const relativePath of DEFAULT_CONFIG_PATHS) {
+      const globalPath = path.resolve(os.homedir(), relativePath);
+      if (fs.existsSync(globalPath)) {
+        existFilePath = globalPath;
+        break;
+      }
+    }
+  } else {
+    // 项目配置文件检测
+    for (const relativePath of DEFAULT_CONFIG_PATHS) {
+      const cwdPath = path.resolve(process.cwd(), relativePath);
+      if (fs.existsSync(cwdPath)) {
+        existFilePath = cwdPath;
+        break;
+      }
+    }
+  }
+  if (existFilePath) {
+    throw new Error(
+      `Function init: ${global ? 'global ' : ''}config  file already exists: ${existFilePath}`,
+    );
   }
 
   const spinner = ora(`正在创建配置文件：deploy.config${ext}`).start();
@@ -88,6 +109,7 @@ export function init(options: InitOptions): void {
     fs.writeFileSync(outputFilePath, result, 'utf-8');
 
     spinner.succeed(`配置文件创建成功：${outputFilePath}`);
+
     // 打开配置文件
     openFile(outputFilePath);
   } catch (error) {

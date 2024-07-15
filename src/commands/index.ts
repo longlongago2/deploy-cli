@@ -23,6 +23,7 @@ export interface DeployArgv {
 export interface InitArgv {
   type: 'json' | 'yaml' | 'javascript';
   module?: 'commonjs' | 'cjs' | 'esm' | 'mjs';
+  global?: boolean;
 }
 
 export interface ConnectArgv {
@@ -71,7 +72,6 @@ export function initCommands(): void {
         const result = await readDeployConfig(configFilePath);
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
         await deploy(result.config);
-        process.exit(0); // 以正常状态退出
       } catch (error) {
         console.error(`😭 部署失败：${chalk.red((error as Error).message)}\n`);
         process.exit(1); // 以错误状态退出，会在控制台输出错误信息
@@ -84,11 +84,11 @@ export function initCommands(): void {
     .alias('gen')
     .option('-t, --type <type>', 'file type: "json" | "yaml" | "javascript"', 'javascript')
     .option('-m, --module <module>', 'javascript module type: "commonjs" | "cjs" | "esm" | "mjs"', 'cjs')
+    .option('-g, --global', 'generate global config file | 生成全局配置文件')
     .description('init(generate) deploy config file | 生成配置文件')
     .action((argv: Partial<InitArgv>) => {
       try {
         init(argv);
-        process.exit(0);
       } catch (error) {
         console.error(`😭 初始化失败：${chalk.red((error as Error).message)}\n`);
         process.exit(1);
@@ -122,10 +122,9 @@ export function initCommands(): void {
         };
         const conn = await connect(connectOptions);
         conn.end(); // 测试完成后立即断开连接
-        process.exit(0); // 以正常状态退出
       } catch (error) {
         console.error(`😭 连接失败：${chalk.red((error as Error).message)}\n`);
-        process.exit(1); // 以错误状态退出，会在控制台输出错误信息
+        process.exit(1); // 以错误状态退出，会在控制台输出错误信息, process.exit(0) 为正常退出
       }
     });
 
@@ -162,7 +161,6 @@ export function initCommands(): void {
           dest,
         };
         await backup(backupOptions, conn);
-        process.exit(0);
       } catch (error) {
         console.error(`😭 备份失败：${chalk.red((error as Error).message)}\n`);
         process.exit(1);
@@ -185,7 +183,6 @@ export function initCommands(): void {
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
         const conn = await connect(result.config);
         await clean(_cleanOptions, conn);
-        process.exit(0);
       } catch (error) {
         console.error(`😭 清理失败：${chalk.red((error as Error).message)}\n`);
         process.exit(1);
@@ -216,7 +213,6 @@ export function initCommands(): void {
           dir: _uploadOptions.dir,
         };
         await upload(uploadOptions, conn);
-        process.exit(0);
       } catch (error) {
         console.error(`😭 上传失败：${chalk.red((error as Error).message)}\n`);
         process.exit(1);
@@ -225,7 +221,7 @@ export function initCommands(): void {
 
   program
     .command('view config')
-    .description('view deploy config file | 查看配置文件')
+    .description('view deploy config info | 查看部署配置信息')
     .option('-c, --config <config>', 'config file path')
     .action(viewConfig);
 

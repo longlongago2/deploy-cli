@@ -6,9 +6,11 @@
 
 - 🪄 支持多种配置文件格式，如 `json`、`yaml`、`js`。
 
-- 🚩 支持配置多个任务。
+- 🚩 支持灵活配置多个任务。
 
 - ⚡ 支持单独步骤执行，如 `connect`、`clean`、`backup`、`upload`。
+
+- 🌍 支持全局配置
 
 ## 翻译
 
@@ -54,6 +56,7 @@ init 生成部署配置文件
 选项:
   -t, --type <type>      文件类型: "json" | "yaml" | "javascript" (默认: "javascript")
   -m, --module <module>  javascript 模块类型: "commonjs" | "cjs" | "esm" | "mjs" (默认: "cjs")
+  -g, --global           生成全局配置文件（系统用户目录下）
   -h, --help             显示命令帮助
 ```
 
@@ -70,6 +73,8 @@ module.exports = {
   // autoClean: false, // 如果任务的该属性不存在，此处属性将生效
   tasks: [
     {
+      name: 'task name',
+      disabled: false, // 是否禁用
       target: 'your/dist/path',
       remoteDir: '/your/server/path',
       autoBackup: true,
@@ -138,3 +143,21 @@ CLI 用于将项目部署到服务器
 ```
 
 然后，使用 `npm run deploy`。
+
+### 5. 其他命令
+
+```bash
+deploy view config
+```
+
+用法：
+
+```bash
+Usage: deploy view [options] <config>
+
+查看部署配置信息
+
+Options:
+  -c, --config <config>  配置文件路径
+  -h, --help             显示命令帮助
+```
