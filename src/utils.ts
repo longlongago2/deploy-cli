@@ -1,10 +1,13 @@
 import path from 'node:path';
 import url from 'node:url';
+import os from 'node:os';
+import process from 'node:process';
+import { createRequire } from 'node:module';
+import { spawn } from 'node:child_process';
 import fs from 'fs-extra';
 import slash from 'slash';
 import archiver from 'archiver';
 import yaml from 'js-yaml';
-import { createRequire } from 'node:module';
 import type { ArchiverOptions } from 'archiver';
 import type { FileEntryWithStats, SFTPWrapper } from 'ssh2';
 import type { ConfigOptions } from './index.js';
@@ -145,13 +148,24 @@ export async function readDeployConfig(
 ): Promise<{ config: DeployOptions; path: string }> {
   // 配置文件绝对路径，把所有路径都转为绝对路径，因为配置文件有可能是相对路径
   let configAbsolutePath = '';
+  // 用户不提供，使用默认路径
   if (!configPath) {
-    // 用户不提供，使用默认路径
+    // 优先在当前目录(cwd)查找
     for (const relativePath of DEFAULT_CONFIG_PATHS) {
-      const absolutePath = path.resolve(process.cwd(), relativePath);
-      if (fs.pathExistsSync(absolutePath)) {
-        configAbsolutePath = absolutePath;
+      const absoluteCwdPath = path.resolve(process.cwd(), relativePath);
+      if (fs.pathExistsSync(absoluteCwdPath)) {
+        configAbsolutePath = absoluteCwdPath;
         break;
+      }
+    }
+    // 当前目录(cwd)不存在，再在用户目录(homedir)查找
+    if (!configAbsolutePath) {
+      for (const relativePath of DEFAULT_CONFIG_PATHS) {
+        const absoluteHomePath = path.resolve(os.homedir(), relativePath);
+        if (fs.pathExistsSync(absoluteHomePath)) {
+          configAbsolutePath = absoluteHomePath;
+          break;
+        }
       }
     }
   } else if (path.isAbsolute(configPath)) {
@@ -545,4 +559,29 @@ export function readProjectPackageJson(startDir: string): PackageJson | null {
     pkg = JSON.parse(pkgContent) as PackageJson;
   }
   return pkg;
+}
+
+/**
+ * 打开文件（异步返回 ChildProcess，可通过监听获取进程状态）
+ * @param filePath - 文件路径
+ */
+export function openFile(filePath: string): ReturnType<typeof spawn> | null {
+  let cmd = '';
+  switch (process.platform) {
+    case 'darwin':
+      cmd = 'open';
+      break;
+    case 'win32':
+      cmd = 'start';
+      break;
+    case 'linux':
+      cmd = 'xdg-open';
+      break;
+    default:
+      break;
+  }
+  if (cmd) {
+    return spawn(cmd, [filePath], { stdio: 'inherit' });
+  }
+  return null;
 }

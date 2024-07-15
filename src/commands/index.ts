@@ -14,6 +14,7 @@ import { backup } from './backup.js';
 import { clean } from './clean.js';
 import { init } from './init.js';
 import { upload } from './upload.js';
+import { viewConfig } from './viewConfig.js';
 
 export interface DeployArgv {
   config: string;
@@ -221,6 +222,12 @@ export function initCommands(): void {
         process.exit(1);
       }
     });
+
+  program
+    .command('view config')
+    .description('view deploy config file | 查看配置文件')
+    .option('-c, --config <config>', 'config file path')
+    .action(viewConfig);
 
   program.parse(process.argv);
 }
