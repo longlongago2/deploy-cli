@@ -1,6 +1,6 @@
 {
   "name": "@nebulae-cli/deploy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Command line tools for deploying",
   "private": false,
   "type": "module",
