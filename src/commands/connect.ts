@@ -99,8 +99,6 @@ export async function connect(options: ConnectOptions): Promise<DeployClient> {
         password: _password,
         privateKey: _privateKey,
         readyTimeout: 20000,
-        keepaliveInterval: 10000,
-        keepaliveCountMax: 3,
       });
   });
 }
