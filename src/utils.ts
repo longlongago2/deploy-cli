@@ -197,14 +197,17 @@ export async function existsRemoteDir(conn: DeployClient, remoteDir: string): Pr
   return new Promise<boolean>((resolve) => {
     conn.sftp((err, sftp) => {
       if (err) {
+        sftp.destroy();
         resolve(false);
         return;
       }
       sftp.stat(remoteDir, (errStat) => {
         if (errStat) {
+          sftp.destroy();
           resolve(false);
           return;
         }
+        sftp.end();
         resolve(true);
       });
     });
@@ -471,6 +474,7 @@ export async function createSFTP(conn: DeployClient): Promise<SFTPWrapper> {
   return new Promise<SFTPWrapper>((resolve, reject) => {
     conn.sftp((err, sftp) => {
       if (err) {
+        sftp.destroy();
         reject(err);
         return;
       }
@@ -535,9 +539,22 @@ export function findProjectRoot(startDir: string): string | null {
 export interface PackageJson {
   [key: string]: any; // 允许其他任意字段
   name?: string;
+  private?: boolean;
   version?: string;
   description?: string;
   main?: string;
+  module?: string;
+  homepage?: string;
+  author?: string;
+  license?: string;
+  bugs?: {
+    url?: string;
+    email?: string;
+  };
+  repository?: {
+    type?: string;
+    url?: string;
+  };
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;

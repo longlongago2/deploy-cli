@@ -1,6 +1,7 @@
 import path from 'node:path';
 import url from 'node:url';
 import chalk from 'chalk';
+import open from 'open';
 import { program } from 'commander';
 import {
   ensureAbsolutePath,
@@ -204,7 +205,7 @@ export function initCommands(): void {
           throw new Error('local project source path is required');
         }
         const { config: configFilePath, ..._uploadOptions } = options;
-        // 只读取默认配置文件
+        // 只读取配置文件连接服务器
         const result = await readDeployConfig(configFilePath);
         console.log(chalk.green(`⚡ Load config file: ${result.path}\n`));
         const conn = await connect(result.config);
@@ -224,6 +225,23 @@ export function initCommands(): void {
     .description('view deploy config info | 查看部署配置信息')
     .option('-c, --config <config>', 'config file path')
     .action(viewConfig);
+
+  program
+    .command('repository')
+    .alias('repo')
+    .description('open repository | 打开仓库')
+    .action(() => {
+      const repoUrl = pkg.repository?.url;
+      if (repoUrl) {
+        const [a, b] = repoUrl.split('+') as [string, string | undefined];
+        const website = b ?? a;
+        console.log(`🚀 Open repository: ${chalk.blue(website)}`);
+        // 打开仓库
+        void open(website);
+      } else {
+        console.error('😭 Repository url not found');
+      }
+    });
 
   program.parse(process.argv);
 }
