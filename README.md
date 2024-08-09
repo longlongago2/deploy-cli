@@ -148,6 +148,8 @@ then, use `npm run deploy`
 
 ### 5. Other commands
 
+#### 5.1 view config
+
 ```bash
 deploy view config
 ```
@@ -162,4 +164,23 @@ view deploy config file info
 Options:
   -c, --config <config>  config file path
   -h, --help             display help for command
+```
+
+#### 5.2 open repository
+
+```bash
+deploy repository
+# or
+deploy repo
+```
+
+useage:
+
+```bash
+Usage: deploy repository|repo [options]
+
+open repository
+
+Options:
+  -h, --help  display help for command
 ```

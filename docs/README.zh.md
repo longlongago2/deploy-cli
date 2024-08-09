@@ -146,6 +146,8 @@ CLI 用于将项目部署到服务器
 
 ### 5. 其他命令
 
+#### 5.1. 查看配置
+
 ```bash
 deploy view config
 ```
@@ -160,4 +162,23 @@ Usage: deploy view [options] <config>
 Options:
   -c, --config <config>  配置文件路径
   -h, --help             显示命令帮助
+```
+
+#### 5.2. 打开仓库
+  
+```bash
+deploy repository
+# or
+deploy repo
+```
+
+用法：
+
+```bash
+Usage: deploy repository|repo [options]
+
+open repository
+
+Options:
+  -h, --help  显示命令帮助
 ```
