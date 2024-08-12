@@ -7,7 +7,7 @@
     "lib": ["ESNext"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext" /* 使用node环境解析导入路径，需要完整路径，无法省略index.js,即使在ts中也需要引用*.js */,
-    "checkJs": true,
+    "checkJs": false,
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

@@ -1,13 +1,12 @@
 import globals from 'globals';
-import jsEslint from '@eslint/js';
+import pluginJs from '@eslint/js';
 import tsEslint from 'typescript-eslint';
-import eslintConfigPrettier from 'eslint-config-prettier';
+import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 
-export default tsEslint.config(
+export default [
+  { files: ['**/*.{js,mjs,cjs,ts}'] },
   {
-    // 数组的每一项，都可以指定适配文件 files，不指定默认适配全部
-    files: ['**/*.{js,mjs,cjs,ts}'],
     languageOptions: {
       globals: globals.node,
       ecmaVersion: 'latest',
@@ -28,7 +27,7 @@ export default tsEslint.config(
       '**/*.config.{js,mjs,cjs,ts}',
     ],
   },
-  jsEslint.configs.recommended,
+  pluginJs.configs.recommended,
   ...tsEslint.configs.all,
   eslintConfigPrettier,
   eslintPluginPrettierRecommended,
@@ -42,4 +41,5 @@ export default tsEslint.config(
       '@typescript-eslint/max-params': 'off',
     },
   },
-);
+];
+
