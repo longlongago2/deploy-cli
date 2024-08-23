@@ -68,6 +68,8 @@ module.exports = {
   host: 'xxx.xx.xxx.x',
   port: 22,
   username: 'server_ssh_name',
+  // logger: true, // Whether to enable log output
+  // logFilePath: 'deploy.log',
   // password: '',
   // privateKey: '',
   // autoBackup: true,

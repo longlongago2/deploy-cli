@@ -67,6 +67,8 @@ module.exports = {
   host: 'xxx.xx.xxx.x',
   port: 22,
   username: 'server_ssh_name',
+  // logger: true, // 是否启用日志记录
+  // logFilePath: 'deploy.log',
   // password: '',
   // privateKey: '',
   // autoBackup: true,
