@@ -1,14 +1,21 @@
 import path from 'node:path';
 import process from 'node:process';
+import ora from 'ora';
+import winston from 'winston';
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import { ensureAbsolutePath, existsRemoteDir, connExec, DEFAULT_SSH_PORT } from '../utils.js';
+import {
+  ensureAbsolutePath,
+  existsRemoteDir,
+  connExec,
+  DEFAULT_SSH_PORT,
+  DEFAULT_LOG_FILE_PATH,
+} from '../utils.js';
 import { connect } from './connect.js';
 import { backup } from './backup.js';
 import { clean } from './clean.js';
 import { upload } from './upload.js';
 import type { ConnectOptions, DeployClient } from './connect.js';
-import ora from 'ora';
 
 export interface TaskOptions {
   /**
@@ -61,14 +68,53 @@ export interface TaskOptions {
 }
 
 export interface DeployOptions extends ConnectOptions {
+  /**
+   * 部署任务列表
+   */
   tasks?: TaskOptions[];
+
+  /**
+   * 是否开启日志记录，默认 false
+   */
+  logger?: boolean;
+
+  /**
+   * 日志文件路径，默认 process.cwd() 下的 deploy.log
+   */
+  logFilePath?: string;
 }
 
 export async function deploy(options: DeployOptions): Promise<void> {
-  const { host, port = DEFAULT_SSH_PORT, username, password, privateKey, tasks = [] } = options;
+  const {
+    host,
+    port = DEFAULT_SSH_PORT,
+    username,
+    password,
+    privateKey,
+    tasks = [],
+    logger = false,
+    logFilePath = DEFAULT_LOG_FILE_PATH,
+  } = options;
 
   // 确保所有路径全部转为绝对路径（相对于process.cwd()）
   const _privateKey = privateKey && ensureAbsolutePath(privateKey);
+
+  let iLogger: winston.Logger | null = null;
+
+  if (logger) {
+    const _logFilePath = ensureAbsolutePath(logFilePath);
+    iLogger = winston.createLogger({
+      level: 'info',
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        winston.format.json(),
+      ),
+      transports: [
+        new winston.transports.File({ filename: _logFilePath, level: 'info' }),
+        // new winston.transports.Console({ level: 'info' }), // logger 会将日志输出到控制台
+      ],
+    });
+  }
 
   // 连接服务器
   const conn = await connect({
@@ -98,7 +144,7 @@ SSH 用户名: ${chalk.bold.green(username)}
     return; // 部署终止
   }
 
-  outputs += `\n\n${chalk.gray('[✓]：通过；[✗]：失败；[*]：自动，存在失败项将终止当前任务')}\n`;
+  outputs += `\n\n${chalk.gray('[✓]：通过；[✗]：失败；[*]：自动，若存在失败项将终止该子任务')}\n`;
   console.log(outputs);
 
   // 正式开始部署，顺序执行部署任务
@@ -125,7 +171,9 @@ SSH 用户名: ${chalk.bold.green(username)}
       const remoteDirStat = await existsRemoteDir(conn, remoteDir); // 远程目录是否存在
       const necessary = targetPathStat && remoteDirStat;
 
-      console.log(`🚩 ${chalk.bold.yellow(`任务${index + 1}`)}：${chalk.gray(name ?? '无标题')} - ${necessary ? chalk.green('⚡ 准备就绪') : chalk.red('❌ 环境缺失，该任务终止')}
+      console.log(
+        `
+🚩 ${chalk.bold.yellow(`任务${index + 1}`)}：${chalk.gray(name ?? '无标题')} - ${necessary ? chalk.green('⚡ 准备就绪') : chalk.red('❌ 环境缺失，该任务终止')}
 
 ${chalk.red('*')} 资源路径: ${targetPathStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(_target)}
 ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.red('[✗]')} - ${chalk.bold.green(remoteDir)}
@@ -133,8 +181,12 @@ ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.r
   自动备份: ${autoBackup ? chalk.green('是') : chalk.red('否')}
   自动清理: ${autoClean ? chalk.green('是') : chalk.red('否')}
   部署命令: ${deployedCommands && deployedCommands.length > 0 ? chalk.green('有') : chalk.red('无')}
-  部署回调: ${onCompleted ? chalk.green('有') : chalk.red('无')}
-`);
+  部署回调: ${onCompleted ? chalk.green('有') : chalk.red('无')}`.trim(),
+      );
+      // 记录日志
+      iLogger?.error(
+        `任务${index + 1}：${name ?? '无标题'} - ${necessary ? '准备就绪' : '环境缺失，该任务终止'}`,
+      );
 
       if (!necessary) {
         if (index !== _tasks.length - 1) {
@@ -159,6 +211,7 @@ ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.r
         const err = await connExec(conn, command).catch((_err: unknown) => _err as Error);
         if (err) {
           spinner.fail(`远程命令执行失败: ${chalk.red(err.message)}`);
+          iLogger?.error(`任务${index + 1}：${name ?? '无标题'} - 远程命令执行失败: ${err.message}`); // 记录日志
         } else {
           spinner.succeed('远程命令执行完毕');
         }
@@ -176,13 +229,17 @@ ${chalk.red('*')} 发布目录: ${remoteDirStat ? chalk.green('[✓]') : chalk.r
       }
 
       console.log(chalk.green(`🎉 部署完成`));
+      iLogger?.info(`任务${index + 1}：${name ?? '无标题'} - 部署完成`); // 记录日志
       if (index !== _tasks.length - 1) {
         console.log(chalk.yellow('---------------------------------------------------------------'));
       }
     }
     conn.end();
+    iLogger?.info(`------ ${host}:${port} Deploy finished! ------`); // 记录日志
   } catch (error) {
     conn.end();
-    throw new Error(`Deploy failed: ${(error as Error).message}`);
+    const errMsg = `Deploy failed: ${(error as Error).message}`;
+    iLogger?.error(errMsg); // 记录日志
+    throw new Error(errMsg);
   }
 }

@@ -11,7 +11,20 @@ type CommonTaskOptions = Partial<Omit<TaskOptions, 'name'>>;
 type RootConfigOptions = ConnectOptions & CommonTaskOptions;
 
 export interface ConfigOptions extends RootConfigOptions {
+  /**
+   * 部署任务列表
+   */
   tasks?: TaskOptions[];
+
+  /**
+   * 是否开启日志记录，默认 false
+   */
+  logger?: boolean;
+
+  /**
+   * 日志文件路径，默认 process.cwd() 下的 deploy.log
+   */
+  logFilePath?: string;
 }
 
 // ConfigOptions 和 DeployOptions 的区别是 ConfigOptions 根属性包含了 TaskOptions 的所有属性（非必填），

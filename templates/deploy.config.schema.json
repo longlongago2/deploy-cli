@@ -53,6 +53,15 @@
         "type": "string"
       }
     },
+    "logger": {
+      "type": "boolean",
+      "description": "是否开启日志记录（非必填），默认 false",
+      "default": false
+    },
+    "logFilePath": {
+      "type": "string",
+      "description": "日志文件路径（非必填），默认 cwd 目录下的 deploy.log"
+    },
     "tasks": {
       "type": "array",
       "description": "部署任务列表",

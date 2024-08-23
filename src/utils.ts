@@ -20,6 +20,11 @@ import type { DeployOptions } from './commands/deploy.js';
 export const DEFAULT_SSH_PORT = 22;
 
 /**
+ * 默认的日志文件路径
+ */
+export const DEFAULT_LOG_FILE_PATH = path.resolve(process.cwd(), 'deploy.log');
+
+/**
  * 默认的配置文件路径，按顺序查找
  */
 export const DEFAULT_CONFIG_PATHS = [
@@ -123,13 +128,28 @@ export async function loadConfigFile(configPath: string): Promise<ConfigOptions>
  * @param config - 原始配置，配置文件中的内容
  */
 export function transformToDeployConfig(config: ConfigOptions): DeployOptions {
-  const { host, port, username, password, privateKey, tasks, ...taskOptions } = config;
+  const {
+    // ConnectOptions | 连接服务器配置
+    host,
+    port,
+    username,
+    password,
+    privateKey,
+    // ConfigOptions | 部署特有配置
+    tasks,
+    logger,
+    logFilePath,
+    // TaskOptions | 其余都是任务配置
+    ...taskOptions
+  } = config;
   const deployConfig: DeployOptions = {
     host,
     port,
     username,
     password,
     privateKey,
+    logger,
+    logFilePath,
     tasks: [],
   };
   // 如果配置文件中有 tasks 属性，则合并到 DeployOptions 根属性上
