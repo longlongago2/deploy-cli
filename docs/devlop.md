@@ -77,3 +77,11 @@ npm run deploy:dev -- --your-argument value
 # 具体例子
 npm run deploy:dev backup -- --source test
 ```
+
+## 五、发布
+
+> 使用 github action 自动发布，触发条件：github 设置 Release 新版本时，自动触发 Action 发布到 npm
+
+配置文件：`.github/workflows/xxx.yml`
+
+
