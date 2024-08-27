@@ -66,7 +66,7 @@ export function initCommands(): void {
     .name('deploy')
     .description('CLI for deploy project to server | CLI 部署工具')
     .version(pkg.version ?? '0.0.0')
-    .option('-c, --config', 'config file path')
+    .option('-c, --config <config>', 'config file path')
     .action(async (argv: Partial<DeployArgv>) => {
       try {
         const { config: configFilePath } = argv;
